@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veste Manto - Catálogo</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="container header-content">
+            <button id="btn-menu" class="icon-btn"><span class="material-icons">menu</span></button>
+            
+            <div class="logo">
+               <img src="./assets/LogoVesteManto.png" alt="Logo">
+            </div>
+
+            <button id="btn-cart" class="icon-btn relative">
+                <span class="material-icons">shopping_cart</span>
+                <span id="cart-count" class="badge">0</span>
+            </button>
+        </div>
+    </header>
+
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3>Categorias</h3>
+            <button id="close-sidebar"><span class="material-icons">close</span></button>
+        </div>
+        <nav id="category-list">
+            </nav>
+        <div class="sidebar-footer">
+            <a href="#/admin" class="admin-link">Painel Administrativo</a>
+        </div>
+    </aside>
+    <div id="overlay" class="overlay"></div>
+
+    <main id="app" class="container">
+        </main>
+
+    <dialog id="product-modal" class="modal">
+        <div class="modal-content" id="modal-body"></div>
+    </dialog>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -219,4 +219,80 @@ h1{
     border-radius: 50%;
     cursor: pointer;
 }
-.dot.active { background: var(--accent-color); transform: scale(1.2); }
+.dot.active { background: var(--accent-color); transform: scale(1.2); };
+
+/* --- Mantenha o CSS anterior e ADICIONE isso ao final --- */
+
+/* 1. Descrição na Vitrine (Card) */
+.card-desc {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Mostra apenas 2 linhas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+    height: 2.8em; /* Altura fixa para alinhar botões */
+}
+
+/* 2. Admin: Linha Selecionável */
+.list-item {
+    position: relative; /* Necessário para o swipe */
+    transition: background 0.2s, transform 0.2s;
+    cursor: pointer;
+    overflow: hidden; /* Para esconder o botão de delete do swipe */
+}
+
+.list-item.selected {
+    background-color: #444 !important;
+    border-left: 4px solid var(--accent-color);
+}
+
+.list-item:hover {
+    background-color: #333;
+}
+
+/* 3. Admin: Swipe no Mobile */
+.swipe-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+.swipe-content {
+    position: relative;
+    z-index: 2;
+    background: #222; /* Cor igual ao fundo do list-item */
+    transition: transform 0.3s ease-out;
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Botão de Delete escondido atrás */
+.swipe-delete-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    background-color: var(--danger);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.list-item.swiped .swipe-content {
+    transform: translateX(-80px); /* Move para esquerda */
+}

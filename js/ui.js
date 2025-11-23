@@ -19,18 +19,30 @@ export const UI = {
         if(products.length === 0) html += `<p>Nenhum produto encontrado nesta categoria.</p>`;
         
         products.forEach(p => {
-            const img = p.image ? p.image : 'assets/placeholder.png';
-            // Verifica estoque para mudar visual do botão
-            const isOutOfStock = p.stock <= 0;
+            // Lógica de compatibilidade de imagem
+            let img = 'assets/placeholder.png';
+            if (p.images && p.images.length > 0) img = p.images[0];
+            else if (p.image) img = p.image;
+
+            // Verifica estoque (considerando config de negativo)
+            const settings = store.state.settings || { allowNegativeStock: false };
+            const isOutOfStock = !settings.allowNegativeStock && p.stock <= 0;
+            
             const btnText = isOutOfStock ? 'Esgotado' : 'Ver Detalhes';
             const btnStyle = isOutOfStock ? 'background:#555; color:#aaa; border-color:#555; cursor:not-allowed;' : '';
 
             html += `<div class="card">
                 ${isOutOfStock ? '<span class="badge" style="top:10px; right:10px; width:auto; padding:2px 8px; border-radius:4px;">ESGOTADO</span>' : ''}
+                
                 <img src="${img}" alt="${p.name}" class="card-image" style="${isOutOfStock ? 'opacity:0.5' : ''}">
+                
                 <div class="card-details">
-                    <h3>${p.name}</h3>
+                    <h3 style="margin-bottom: 2px;">${p.name}</h3>
+                    
+                    <p class="card-desc">${p.description || 'Sem descrição disponível.'}</p>
+                    
                     <div class="price">${formatPrice(p.price)}</div>
+                    
                     <button class="btn-add" onclick="${isOutOfStock ? '' : `window.openProductModal(${p.id})`}" style="${btnStyle}">
                         ${btnText}
                     </button>
@@ -55,10 +67,16 @@ export const UI = {
         let html = `<h2 class="section-title">Seu Carrinho</h2><div class="cart-list">`;
         
         cart.forEach((item, index) => {
+            // Garante imagem no carrinho
+            const thumb = item.image || 'assets/placeholder.png';
+
             html += `<div class="list-item">
-                <div>
-                    <strong>${item.name}</strong> <br> 
-                    <small>Tam: ${item.size} | Qtd: ${item.qty}</small>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <img src="${thumb}" style="width:50px; height:50px; object-fit:cover; border-radius:4px;">
+                    <div>
+                        <strong>${item.name}</strong> <br> 
+                        <small>Tam: ${item.size} | Qtd: ${item.qty}</small>
+                    </div>
                 </div>
                 <div style="text-align:right;">
                     <div>${formatPrice(item.price * item.qty)}</div>
@@ -90,6 +108,7 @@ export const UI = {
     },
 
     updateBadge() {
-        document.getElementById('cart-count').innerText = store.state.cart.reduce((acc, item) => acc + item.qty, 0);
+        const el = document.getElementById('cart-count');
+        if (el) el.innerText = store.state.cart.reduce((acc, item) => acc + item.qty, 0);
     }
 };

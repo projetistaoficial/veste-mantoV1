@@ -28,7 +28,9 @@ export const UI = {
             const settings = store.state.settings || { allowNegativeStock: false };
             const isOutOfStock = !settings.allowNegativeStock && p.stock <= 0;
             
-            const btnText = isOutOfStock ? 'Esgotado' : 'Ver Detalhes';
+            const verDetalhes = `<div style="color: gray; font-weight: bold" >Ver Detalhes`
+
+            const btnText = isOutOfStock ? 'Esgotado' : verDetalhes ;
             const btnStyle = isOutOfStock ? 'background:#555; color:#aaa; border-color:#555; cursor:not-allowed;' : '';
 
             html += `<div class="card">
@@ -37,9 +39,9 @@ export const UI = {
                 <img src="${img}" alt="${p.name}" class="card-image" style="${isOutOfStock ? 'opacity:0.5' : ''}">
                 
                 <div class="card-details">
-                    <h3 style="margin-bottom: 2px;">${p.name}</h3>
+                    <h3 class="nomeProduto" style="margin-bottom: 2px;">${p.name}</h3>
                     
-                    <p class="card-desc">${p.description || 'Sem descrição disponível.'}</p>
+                    <p class="card-desc descProduto">${p.description || 'Sem descrição disponível.'}</p>
                     
                     <div class="price">${formatPrice(p.price)}</div>
                     

@@ -299,7 +299,6 @@ window.toggleStockConfig = () => {
     }
 };
 
-// Admin - Produtos (Corrigido conforme conversa anterior)
 window.saveProductForm = () => {
     const id = document.getElementById('prod-id').value;
     const name = document.getElementById('prod-name').value;
@@ -323,7 +322,7 @@ window.saveProductForm = () => {
         };
         
         store.saveProduct(product); 
-        alert('Salvo!'); 
+        // alert('Salvo!'); 
         renderAdminWithSettings(); // Recarrega Admin com Configurações
     };
 
@@ -403,6 +402,6 @@ function fillSidebar() {
     store.state.categories.forEach(c => {
         html += `<a href="#/category/${c}" onclick="document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open');" style="display:block; padding:10px; color:white; text-decoration:none; border-bottom:1px solid #333;">${c}</a>`;
     });
-    html += `<a href="#/" onclick="document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open');" style="display:block; padding:10px; color:var(--accent-color); text-decoration:none;">Ver Tudo</a>`;
+    html += `<a href="#/" onclick="document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open');" style="display:block; font-weight: bolder; font-size: 3vh; padding:10px; color:var(--accent-color); text-decoration:none;">Home</a>`;
     nav.innerHTML = html;
 }

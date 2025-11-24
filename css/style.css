@@ -14,14 +14,14 @@
 
 /* --- MODO CLARO --- */
 /* Altera apenas o fundo da página e o texto solto. 
-   Cards, Header e Sidebar mantêm o visual escuro. */
+    Cards, Header e Sidebar mantêm o visual escuro. */
 body.light-mode {
     background-color: #f4f4f9 !important;
     color: #1a1a1a !important;
     /* Texto escuro para ler no fundo claro */
 }
 body::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 /* Reset Básico */
 * {
@@ -283,7 +283,7 @@ h1 {
 }
 
 
-/* --- MODAL --- */
+/* --- MODAL DE PRODUTO --- */
 .modal {
     margin: auto;
     border: none;
@@ -337,6 +337,7 @@ h1 {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    cursor: pointer; /* Adicionado para indicar que é clicável para zoom */
 }
 
 .slider-btn {
@@ -404,6 +405,31 @@ h1 {
     color: white;
     font-size: 1.1rem;
     border-radius: 4px;
+}
+
+/* --- MODAL DE ZOOM (TELA CHEIA) [NOVO] --- */
+.zoom-modal {
+    margin: auto;
+    border: none;
+    background: rgba(0, 0, 0, 0.9); /* Fundo escuro transparente */
+    max-width: 95vw;
+    max-height: 95vh;
+    padding: 0;
+    cursor: pointer; /* Indica que é clicável para fechar */
+}
+
+.zoom-modal::backdrop {
+    background: rgba(0, 0, 0, 0.95);
+}
+
+.zoom-modal .zoom-image {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 100vh;
+    object-fit: contain; /* Garante que a imagem inteira seja visível */
+    margin: auto;
 }
 
 /* --- ADMIN & FORMS --- */
@@ -611,12 +637,29 @@ h1 {
     font-size: 5vh;
 }
 
-@media (min-width: 768px) {
-    .product-grid {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    }
-
-    .card-image {
-        height: 240px;
-    }
+/* --- TOAST / POPUP DE NOTIFICAÇÃO [NOVO] --- */
+#toast-message {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 8px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1000;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 30px; 
+    font-size: 1rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    /* Transições suaves */
+    transition: visibility 0s, opacity 0.5s ease-in-out, background-color 0.3s;
 }
+
+#toast-message.show {
+    visibility: visible;
+    opacity: 1;
+}
+

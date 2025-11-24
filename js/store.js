@@ -6,7 +6,7 @@ const STORAGE_KEYS = {
     CATEGORIES: 'vm_categories',
     COUPONS: 'vm_coupons',
     STATS: 'vm_stats',
-    SETTINGS: 'vm_settings' 
+    SETTINGS: 'vm_settings'
 };
 
 const initialProducts = [
@@ -16,22 +16,57 @@ const initialProducts = [
 
 const initialCategories = ['Masculino', 'Feminino', 'Nike', 'Adidas', 'Promoções'];
 const initialStats = { visits: 0, conversions: 0 };
+const initialSettings = { allowNegativeStock: false };
 
 export const store = {
+    // 1. Inicializa o estado com dados lidos do LocalStorage
     state: {
-        products: JSON.parse(localStorage.getItem(STORAGE_KEYS.PRODUCTS)) || initialProducts,
-        categories: JSON.parse(localStorage.getItem(STORAGE_KEYS.CATEGORIES)) || initialCategories,
-        coupons: JSON.parse(localStorage.getItem(STORAGE_KEYS.COUPONS)) || [],
-        stats: JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS)) || initialStats,
-        cart: JSON.parse(localStorage.getItem(STORAGE_KEYS.CART)) || [],
+        products: JSON.parse(localStorage.getItem(STORAGE_KEYS.PRODUCTS)),
+        categories: JSON.parse(localStorage.getItem(STORAGE_KEYS.CATEGORIES)),
+        coupons: JSON.parse(localStorage.getItem(STORAGE_KEYS.COUPONS)),
+        stats: JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS)),
+        cart: JSON.parse(localStorage.getItem(STORAGE_KEYS.CART)),
         isAdmin: localStorage.getItem(STORAGE_KEYS.ADMIN_LOGGED) === 'true',
         activeCoupon: null,
-        settings: JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS)) || { allowNegativeStock: false }
+        settings: JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS))
+    },
+
+    // 2. Função de inicialização forçada (executada uma vez)
+    _initStore() {
+        // Se products for null ou array vazio, usa initialProducts
+        if (!this.state.products || this.state.products.length === 0) {
+            this.state.products = initialProducts;
+            this._persist(STORAGE_KEYS.PRODUCTS, initialProducts);
+        }
+        
+        // Se categories for null ou array vazio, usa initialCategories
+        if (!this.state.categories || this.state.categories.length === 0) {
+            this.state.categories = initialCategories;
+            this._persist(STORAGE_KEYS.CATEGORIES, initialCategories);
+        }
+        
+        // Garante que os outros estados sejam inicializados e salvos se forem null
+        if (!this.state.coupons) {
+            this.state.coupons = [];
+            this._persist(STORAGE_KEYS.COUPONS, []);
+        }
+        if (!this.state.stats) {
+            this.state.stats = initialStats;
+            this._persist(STORAGE_KEYS.STATS, initialStats);
+        }
+        if (!this.state.cart) {
+            this.state.cart = [];
+            this._persist(STORAGE_KEYS.CART, []);
+        }
+        if (!this.state.settings) {
+            this.state.settings = initialSettings;
+            this._persist(STORAGE_KEYS.SETTINGS, initialSettings);
+        }
     },
 
     // --- CONFIGURAÇÕES ---
     toggleNegativeStock() {
-        if (!this.state.settings) this.state.settings = { allowNegativeStock: false };
+        if (!this.state.settings) this.state.settings = initialSettings;
         this.state.settings.allowNegativeStock = !this.state.settings.allowNegativeStock;
         this._persist(STORAGE_KEYS.SETTINGS, this.state.settings);
         return this.state.settings.allowNegativeStock;
@@ -51,7 +86,9 @@ export const store = {
         if(product.sold === undefined) product.sold = 0;
 
         if (!Array.isArray(product.images)) product.images = [];
+        // Lógica de imagem: Usa a primeira imagem se o array de imagens existir e não estiver vazios
         if (product.images.length > 0) product.image = product.images[0];
+        // Lógica de fallback: Se `image` existir e `images` estiver vazio, usa `image`
         else if (product.image) product.images = [product.image];
 
         if (product.id) {
@@ -118,7 +155,7 @@ export const store = {
         const quantity = parseInt(qty) || 1;
 
         // Garante que settings existe
-        const settings = this.state.settings || { allowNegativeStock: false };
+        const settings = this.state.settings || initialSettings;
 
         // 1. Verificação Inicial de Estoque
         // Só bloqueia SE a configuração de estoque negativo estiver DESATIVADA
@@ -172,9 +209,14 @@ export const store = {
     },
     getCartTotal() {
         const subtotal = this.state.cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-        const discount = this.state.activeCoupon ? (subtotal * this.state.activeCoupon.discount / 100) : 0;
+        // Aplica o desconto se o cupom for válido e tiver um valor (discount)
+        const discountValue = this.state.activeCoupon?.discount || 0;
+        const discount = this.state.activeCoupon ? (subtotal * discountValue / 100) : 0;
         return { subtotal, total: subtotal - discount, discount };
     },
 
     _persist(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 };
+
+// Executa a inicialização após definir o objeto 'store'
+store._initStore();

@@ -70,7 +70,8 @@ window.openProductModal = (id) => {
     const images = (p.images && p.images.length > 0) ? p.images : (p.image ? [p.image] : ['assets/placeholder.png']);
     currentSlideIndex = 0; 
 
-    const slidesHtml = images.map((img) => `<div class="slide"><img src="${img}"></div>`).join('');
+    // ADICIONADO: onclick="window.zoomImage(this.src)" para habilitar o zoom
+    const slidesHtml = images.map((img) => `<div class="slide"><img src="${img}" onclick="window.zoomImage(this.src)"></div>`).join('');
     const dotsHtml = images.length > 1 ? images.map((_, idx) => `<div class="dot ${idx===0?'active':''}" onclick="window.goToSlide(${idx})"></div>`).join('') : '';
     const arrowsHtml = images.length > 1 ? `<button class="slider-btn prev-btn" onclick="window.changeSlide(-1)">&#10094;</button><button class="slider-btn next-btn" onclick="window.changeSlide(1)">&#10095;</button>` : '';
     let sizesHtml = p.sizes.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -122,11 +123,36 @@ window.updateSliderUI = () => {
         dots.forEach((d, i) => { if(i === currentSlideIndex) d.classList.add('active'); else d.classList.remove('active'); });
     }
 };
+
 window.confirmAdd = (id) => {
     const p = store.getProductById(id);
     const size = document.getElementById('selected-size').value;
     const qty = parseInt(document.getElementById('selected-qty').value) || 1;
     if(store.addToCart(p, size, qty)) { document.getElementById('product-modal').close(); alert('Adicionado!'); } 
+};
+
+
+/* --- NOVA FUNÇÃO DE ZOOM/TELA CHEIA --- */
+window.zoomImage = (src) => {
+    // Cria ou reutiliza o modal/overlay temporário para a visualização
+    let zoomModal = document.getElementById('zoom-modal');
+    if (!zoomModal) {
+        zoomModal = document.createElement('dialog');
+        zoomModal.id = 'zoom-modal';
+        zoomModal.className = 'zoom-modal'; // Classe para estilização no CSS
+        zoomModal.onclick = (e) => {
+            // Se clicar no backdrop ou no próprio modal (fora da imagem), fecha
+            if (e.target === zoomModal) {
+                zoomModal.close();
+                zoomModal.innerHTML = ''; 
+            }
+        };
+        document.body.appendChild(zoomModal);
+    }
+
+    // Coloca a imagem em tamanho grande dentro do novo modal
+    zoomModal.innerHTML = `<img src="${src}" class="zoom-image">`;
+    zoomModal.showModal();
 };
 
 /* --- ADMIN --- */
@@ -229,7 +255,12 @@ window.deleteCouponUI = (c) => { store.deleteCoupon(c); Admin.render(); };
 /* --- CARRINHO --- */
 window.removeItem = (idx) => { store.removeFromCart(idx); UI.renderCart(); };
 window.applyCouponUI = () => { const c = document.getElementById('coupon-code').value; if(store.applyCoupon(c).success) UI.renderCart(); else alert('Inválido'); };
-window.removeCoupon = () => { store.state.activeCoupon = null; UI.renderCart(); };
+
+// CORRIGIDO: Usa o método `removeActiveCoupon` da store, que foi adicionado no arquivo store.js
+window.removeCoupon = () => { 
+    store.removeActiveCoupon(); 
+    UI.renderCart(); 
+};
 
 window.finalizeOrder = () => {
     const cart = store.state.cart;

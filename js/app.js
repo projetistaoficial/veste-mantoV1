@@ -5,29 +5,43 @@ import { Admin } from './admin.js';
 const WHATSAPP_NUMBER = "5511941936976"; 
 let currentSlideIndex = 0; 
 
-/* --- TOUCH SWIPE (ADMIN) --- */
-let touchStartX = 0;
-let touchEndX = 0;
-window.handleTouchStart = (e, id) => { touchStartX = e.changedTouches[0].screenX; };
-window.handleTouchMove = (e, id) => { };
-window.handleTouchEnd = (e, id) => { touchEndX = e.changedTouches[0].screenX; handleSwipeGesture(id); };
-function handleSwipeGesture(id) {
-    const element = document.getElementById(`row-${id}`);
-    if (!element) return;
-    if (touchStartX - touchEndX > 50) element.classList.add('swiped');
-    if (touchEndX - touchStartX > 50) element.classList.remove('swiped');
-}
-window.selectRow = (id) => { Admin.selectedRowId = id; Admin.render(); };
-window.searchInventory = (val) => { Admin.setSearch(val); };
+/* --- TEMA (MODO CLARO/ESCURO) --- */
+window.toggleTheme = () => {
+    document.body.classList.toggle('light-mode');
+    
+    // Salva a preferência
+    const isLight = document.body.classList.contains('light-mode');
+    localStorage.setItem('vm_theme', isLight ? 'light' : 'dark');
+    
+    // Atualiza o menu para trocar o ícone/texto
+    window.fillSidebar(); 
+};
 
 /* --- SIDEBAR --- */
 const fillSidebar = () => {
     const list = document.getElementById('category-list');
     if (!list) return;
-    let html = `<li onclick="window.location.hash='#/'; document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open');" style="cursor:pointer; padding:10px; border-bottom:1px solid #333; font-size: 2vh; font-weight: bold; list-style-type: none">Todos os Produtos</li>`;
+
+    // Verifica tema atual
+    const isLight = document.body.classList.contains('light-mode');
+    const themeIcon = isLight ? '🌙' : '☀️';
+    const themeText = isLight ? 'Modo Escuro' : 'Modo Claro';
+
+    // Item do Tema
+    let html = `
+        <li onclick="window.toggleTheme()" style="cursor:pointer; padding:15px 10px; border-bottom:1px solid #333; font-weight:bold; color:var(--accent-color); display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.2rem">${themeIcon}</span> ${themeText}
+        </li>
+    `;
+
+    // Item "Todos os Produtos"
+    html += `<li onclick="window.location.hash='#/'; document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open');" style="cursor:pointer; padding:10px; border-bottom:1px solid #333; list-style-type: none; font-weight: bold; font-size: 2vh">Todos os Produtos</li>`;
+    
+    // Categorias
     store.state.categories.forEach(cat => {
         html += `<li onclick="window.location.hash='#/category/${encodeURIComponent(cat)}'; document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open');" style="cursor:pointer; padding:10px; border-bottom:1px solid #333;">${cat}</li>`;
     });
+    
     list.innerHTML = html;
 };
 window.fillSidebar = fillSidebar;
@@ -115,10 +129,31 @@ window.confirmAdd = (id) => {
     if(store.addToCart(p, size, qty)) { document.getElementById('product-modal').close(); alert('Adicionado!'); } 
 };
 
-/* --- ADMIN: LOGIN & SAVE --- */
+/* --- ADMIN --- */
 window.tryLogin = () => { if (store.login(document.getElementById('admin-pass').value)) Admin.render(); else alert('Senha incorreta!'); };
 window.toggleStockConfig = () => { store.toggleNegativeStock(); };
 
+// INTERAÇÕES DE SWIPE/TOQUE
+let touchStartX = 0;
+let touchEndX = 0;
+window.handleTouchStart = (e, id) => { touchStartX = e.changedTouches[0].screenX; };
+window.handleTouchMove = (e, id) => { };
+window.handleTouchEnd = (e, id) => { touchEndX = e.changedTouches[0].screenX; handleSwipeGesture(id); };
+function handleSwipeGesture(id) {
+    const element = document.getElementById(`row-${id}`);
+    if (!element) return;
+    if (touchStartX - touchEndX > 50) element.classList.add('swiped');
+    if (touchEndX - touchStartX > 50) element.classList.remove('swiped');
+}
+
+// SELEÇÃO DE LINHA
+window.selectRow = (id) => { 
+    Admin.selectedRowId = id; 
+    Admin.render(); // Isso recarrega a lista para pintar a linha
+};
+window.searchInventory = (val) => { Admin.setSearch(val); };
+
+// SALVAR
 window.saveProductForm = () => {
     const id = document.getElementById('prod-id').value;
     const name = document.getElementById('prod-name').value;
@@ -133,61 +168,53 @@ window.saveProductForm = () => {
 
     const finishSave = (imagesArray) => {
         let finalImages = imagesArray;
-        // Persistência de imagem antiga se não houver nova
         if ((!imagesArray || imagesArray.length === 0) && id) {
-            const oldProd = store.getProductById(id);
+            const oldProd = store.getProductById(parseInt(id));
             if(oldProd) finalImages = oldProd.images || (oldProd.image ? [oldProd.image] : []);
         }
         const product = { id: id ? parseInt(id) : null, name, description: desc, price: parseFloat(price), stock: parseInt(stock), category, sizes, images: finalImages };
-        store.saveProduct(product); 
-        alert('Salvo!'); 
+        store.saveProduct(product);
         Admin.render();
         window.fillSidebar();
     };
     if (fileInput.files.length > 0) Admin.handleImagesUpload(fileInput.files, finishSave); else finishSave([]);
 };
 
-// --- CORREÇÃO: EDIÇÃO DE PRODUTO ---
 window.editProduct = (id) => {
-    const p = store.getProductById(id);
+    const p = store.getProductById(parseInt(id));
     if(!p) return;
 
-    // Preenche campos
-    document.getElementById('prod-id').value = p.id;
-    document.getElementById('prod-name').value = p.name;
-    document.getElementById('prod-desc').value = p.description || '';
-    document.getElementById('prod-price').value = p.price;
-    document.getElementById('prod-stock').value = p.stock;
-    document.getElementById('prod-sizes').value = p.sizes.join(',');
-    document.getElementById('prod-cat').value = p.category;
-    
-    // Preview Imagens
-    const previewDiv = document.getElementById('existing-imgs');
-    if (previewDiv) {
-        previewDiv.innerHTML = '<small style="width:100%; color:#aaa; margin-bottom:5px;">Imagens Atuais:</small>';
-        // Compatibilidade
-        const imgs = (p.images && p.images.length > 0) ? p.images : (p.image ? [p.image] : []);
+    Admin.selectedRowId = id;
+    Admin.render();
+
+    setTimeout(() => {
+        const setVal = (eid, val) => { const el = document.getElementById(eid); if(el) el.value = val; };
         
-        imgs.forEach(img => {
-            previewDiv.innerHTML += `<img src="${img}" style="width:50px; height:50px; object-fit:cover; border:1px solid #555; margin-right:5px;">`;
-        });
-    }
-    
-    // Rola suavemente para o formulário
-    const formArea = document.getElementById('product-form-area'); // Novo ID adicionado no admin.js
-    if(formArea) formArea.scrollIntoView({ behavior: 'smooth' });
-    
-    window.selectRow(id);
+        setVal('prod-id', p.id);
+        setVal('prod-name', p.name);
+        setVal('prod-desc', p.description || '');
+        setVal('prod-price', p.price);
+        setVal('prod-stock', p.stock);
+        setVal('prod-sizes', p.sizes.join(','));
+        setVal('prod-cat', p.category);
+        
+        const previewDiv = document.getElementById('existing-imgs');
+        if (previewDiv) {
+            previewDiv.innerHTML = '<small style="width:100%; color:#aaa; margin-bottom:5px;">Imagens Atuais:</small>';
+            const imgs = (p.images && p.images.length > 0) ? p.images : (p.image ? [p.image] : []);
+            imgs.forEach(img => {
+                previewDiv.innerHTML += `<img src="${img}" style="width:50px; height:50px; object-fit:cover; border:1px solid #555; margin-right:5px;">`;
+            });
+        }
+
+        const formArea = document.querySelector('.section-title');
+        if(formArea) formArea.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
 };
 
 window.clearForm = () => {
-    document.getElementById('prod-id').value = ''; 
-    document.getElementById('prod-name').value = ''; 
-    document.getElementById('prod-desc').value = '';
-    document.getElementById('prod-price').value = ''; 
-    document.getElementById('prod-stock').value = ''; 
-    document.getElementById('prod-sizes').value = '';
-    document.getElementById('prod-imgs').value = ''; 
+    const ids = ['prod-id', 'prod-name', 'prod-desc', 'prod-price', 'prod-stock', 'prod-sizes', 'prod-imgs'];
+    ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
     const prev = document.getElementById('existing-imgs'); if(prev) prev.innerHTML = '';
 };
 
@@ -202,25 +229,52 @@ window.deleteCouponUI = (c) => { store.deleteCoupon(c); Admin.render(); };
 /* --- CARRINHO --- */
 window.removeItem = (idx) => { store.removeFromCart(idx); UI.renderCart(); };
 window.applyCouponUI = () => { const c = document.getElementById('coupon-code').value; if(store.applyCoupon(c).success) UI.renderCart(); else alert('Inválido'); };
-window.removeCoupon = () => { 
-    store.state.activeCoupon = null; // Remove cupom direto
-    UI.renderCart(); 
-};
+window.removeCoupon = () => { store.state.activeCoupon = null; UI.renderCart(); };
+
 window.finalizeOrder = () => {
     const cart = store.state.cart;
     if (cart.length === 0) return;
-    store.logConversion(); store.decreaseStock(cart);
-    const { total } = store.getCartTotal();
-    let msg = `Olá! Pedido:\n\n`;
-    cart.forEach(i => msg += `• ${i.name} (${i.size}) x${i.qty}\n`);
-    msg += `\nTotal: R$ ${total.toFixed(2)}`;
+    
+    store.logConversion(); 
+    store.decreaseStock(cart);
+    
+    const { subtotal, total, discount } = store.getCartTotal();
+    const activeCoupon = store.state.activeCoupon;
+    
+    const orderId = `#${Math.floor(Math.random() * 9000) + 1000}`;
+
+    let msg = `Olá! Gostaria de finalizar o *Pedido ${orderId}*:\n\n`;
+    
+    cart.forEach(i => {
+        msg += `📦 *${i.name}*\n   └ Tam: ${i.size} | Qtd: ${i.qty} | R$ ${(i.price * i.qty).toFixed(2)}\n`;
+    });
+
+    msg += `\nSubtotal: R$ ${subtotal.toFixed(2)}`;
+
+    if (activeCoupon && discount > 0) {
+        msg += `\n🎫 *Cupom:* ${activeCoupon.code}`;
+        msg += `\n📉 *Desconto:* - R$ ${discount.toFixed(2)}`;
+    }
+
+    msg += `\n\n💰 *TOTAL FINAL: R$ ${total.toFixed(2)}*`;
+    
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
-    store.clearCart(); window.location.hash = '#/';
+    store.clearCart(); 
+    window.location.hash = '#/';
 };
 
 /* --- START --- */
 window.addEventListener('hashchange', router);
-window.addEventListener('load', () => { store.logVisit(); window.fillSidebar(); router(); });
+window.addEventListener('load', () => { 
+    // Verifica tema salvo ao carregar
+    if (localStorage.getItem('vm_theme') === 'light') {
+        document.body.classList.add('light-mode');
+    }
+
+    store.logVisit(); 
+    window.fillSidebar(); 
+    router(); 
+});
 window.addEventListener('cart-updated', UI.updateBadge);
 const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('overlay');
 document.getElementById('btn-menu').onclick = () => { sidebar.classList.add('open'); overlay.classList.add('open'); };

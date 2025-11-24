@@ -69,7 +69,7 @@ export const Admin = {
             <button class="btn-secondary" onclick="window.addCouponUI()">Criar</button>
         </div>
         <div style="margin-bottom:30px;">
-            ${store.state.coupons.map(c => `<div class="list-item"><span><strong>${c.code}</strong> (${c.discount}%)</span><button onclick="window.deleteCouponUI('${c.code}')" style="color:red; background:none; border:none;">🗑️</button></div>`).join('')}
+            ${store.state.coupons.map(c => `<div class="list-item"  style="color: white"><span><strong>${c.code}</strong> (${c.discount}%)</span><button onclick="window.deleteCouponUI('${c.code}')" style="color:red; background:none; border:none;">🗑️</button></div>`).join('')}
         </div>
 
         <h3 class="section-title">Produto</h3>
@@ -120,7 +120,7 @@ export const Admin = {
             store.state.categories.forEach(cat => {
                 const prodsInCat = filteredProducts.filter(p => p.category === cat);
                 if (prodsInCat.length > 0) {
-                    html += `<h4 style="margin:15px 0 5px 0; color:var(--accent-color); border-bottom:1px solid #444;">${cat}</h4>`;
+                    html += `<h4 style="margin:15px 0 5px 0; color:var(--accent-color); border-bottom:1px solid #444">${cat}</h4>`;
                     html += this.renderProductList(prodsInCat);
                 }
             });
@@ -170,7 +170,7 @@ export const Admin = {
                     <div style="display:flex; align-items:center; gap:10px;">
                         <img src="${thumb}" style="width:50px; height:50px; object-fit:cover; border-radius:4px;">
                         <div>
-                            <div style="font-weight:bold;">${p.name}</div>
+                            <div style="font-weight:bold; color: white">${p.name}</div>
                             <small style="color:#aaa;">
                                 Est: <span style="color:${p.stock > 0 ? '#fff' : 'red'}">${p.stock}</span> | 
                                 Vend: <span style="color:var(--success)">${p.sold || 0}</span>

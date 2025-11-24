@@ -1,185 +1,315 @@
 :root {
     --bg-color: #121212;
-    --card-bg: #adadad;
+    --card-bg: #1e1e1e;
     --text-primary: #ffffff;
     --text-secondary: #bbbbbb;
-    --accent-color: #fbbf24; /* Amarelo Ouro */
+    --accent-color: #fbbf24;
+    /* Amarelo Ouro */
+
     --header-bg: #000000;
     --success: #22c55e;
     --danger: #ef4444;
     --radius: 12px;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; }
-
-body { background-color: var(--bg-color); color: var(--text-primary); padding-bottom: 80px; }
-.container { width: 100vw; margin: 0 auto; padding: 0 16px; }
-
-/* Header */
-.app-header { background-color: var(--header-bg); padding: 15px 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-height: 15vh;
-border-bottom-right-radius: 4vw;
-border-bottom-left-radius: 4vw;
+/* --- MODO CLARO --- */
+/* Altera apenas o fundo da página e o texto solto. 
+   Cards, Header e Sidebar mantêm o visual escuro. */
+body.light-mode {
+    background-color: #f4f4f9 !important;
+    color: #1a1a1a !important;
+    /* Texto escuro para ler no fundo claro */
 }
-.header-content { display: flex; justify-content: space-between; align-items: center; }
-/* ----------------------------------------------------------------------------------------------- */
-.logo{
-    /* background-color: red; */
+
+/* Reset Básico */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-bottom: 0;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+main {
+    flex: 1;
+}
+
+.container {
+    width: 100vw;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+/* --- HEADER --- */
+.app-header {
+    background-color: var(--header-bg);
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    height: 15vh;
+    border-bottom-right-radius: 4vw;
+    border-bottom-left-radius: 4vw;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 95%;
+    height: 100%;
+}
+
+/* Logo */
+.logo {
     width: 30vw;
-    width: 11vh;
-    img{
-        width: 100%;
-    }
+    position: fixed;
+    top: -13vh;
+    left: 50%;
+    transform: translate(-50%);
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    margin-top: 8vh;
 }
 
-.icon-btn{
-    span{
-        font-size: 5vh;
-    }
+.logo img {
+    width: 20vh;
 }
 
-h1{
+
+#cart-count {
+    margin-top: 7.5vh;
+    right: 3vw;
+}
+
+/* Textos e Títulos */
+h1 {
     text-align: center;
-    margin: 1vh 0 1vh 0;
+    margin: 3vh 0 1vh 0;
     font-size: 3vh;
     font-family: cursive;
     letter-spacing: 0.8vw;
     color: var(--accent-color);
 }
-.admin-link{
-    color: white;
-    /* font-weight: bold; */
-    /* background-color: rgba(32, 30, 30, 0.397); */
-    text-decoration: none;
-    border: 0.1vw solid rgba(255, 255, 255, 0.767);
-    padding: .2vw .4vw .2vw .4vw;
-    border-radius: 0.2vw;
-    font-family: Arial, Helvetica, sans-serif;
-    font-weight: bold;
-}
 
-
-.nomeProduto{
+.section-title {
+    margin: 20px 0 10px;
+    font-size: 1.2rem;
+    font-weight: bolder;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    border-bottom: 1px solid var(--accent-color);
     color: var(--accent-color);
-    font-size: 1.8vh !important;
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    padding-bottom: 5px;
 }
-.descProduto{
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
-    opacity: 0.8;
-    margin-bottom: 0.4vw;
+
+/* --- CARDS (VITRINE) --- */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
 }
-.price{
-    font-size: 2vh !important;
+
+.card {
+    background-color: #000 !important;
+    /* Mantém card preto mesmo no modo claro */
+    color: #fff !important;
+    /* Texto do card sempre branco */
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.card-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background-color: #ccc;
+}
+
+.card-details {
+    background-color: #000;
+    color: #fff;
+    padding: 12px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.card h3 {
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+    color: var(--accent-color);
+}
+
+.card .price {
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 8px;
     color: rgb(29, 245, 29);
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
 }
-.card{
-    background-color: black !important;
-    box-shadow: -10px 20px 12px rgba(0, 0, 0, 0.363) !important;
+
+.card-desc {
+    font-size: 0.8rem;
+    color: #bbb;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+    height: 2.8em;
 }
-/* -------------------------------------------------------------------------------------------- */
-/* Logo */
-.logo-text { display: flex; flex-direction: column; align-items: center; font-weight: bold; line-height: 1; }
-.logo-text span:first-child { font-size: 0.8rem; letter-spacing: 2px; }
-.logo-text .highlight { font-size: 1.5rem; color: var(--accent-color); }
-.logo-text .bottom { color: var(--accent-color); font-size: 0.9rem; text-transform: uppercase; }
 
-.icon-btn { background: none; border: none; color: white; cursor: pointer; }
-.material-icons { font-size: 28px;}
-.sidebar-header{display: flex; justify-content: space-between; align-items: center; h3{font-size: 2.6vh; color: orange;}}
-#close-sidebar{background: none; border: none; color: white; span{font-size: 4vh;}}
+/* Botão Adicionar */
+.btn-add {
+    background-color: transparent;
+    border: 1px solid #fff;
+    color: #fff;
+    padding: 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    width: 100%;
+    transition: 0.2s;
+}
 
-/* Cards */
-.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-top: 20px; }
-.card { background-color: #fff; border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-.card-image { width: 100%; height: 180px; object-fit: cover; background-color: #ccc; }
-.card-details { background-color: #000; color: #fff; padding: 12px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
-.card h3 { font-size: 0.9rem; margin-bottom: 4px; }
-.card .price { font-size: 1rem; font-weight: bold; margin-bottom: 8px; }
-.btn-add { background-color: transparent; border: 1px solid #fff; color: #fff; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; width: 100%; transition: 0.2s; }
-.btn-add:hover { background-color: #fff; color: #000; }
+.btn-add:hover {
+    background-color: #fff;
+    color: #000;
+}
 
-/* Sidebar & Modal */
-.sidebar { position: fixed; left: -280px; top: 0; width: 280px; height: 100%; background: #1e1e1e; z-index: 200; transition: 0.3s; padding: 20px; display: flex; flex-direction: column; }
-.sidebar.open { left: 0;}
-.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 150; display: none; }
-.overlay.open { display: block; }
-.sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid #333; }
+.badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: var(--danger);
+    color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    z-index: 10;
+}
 
-.modal { margin: auto; border: none; border-radius: var(--radius); background: #1e1e1e; color: #fff; max-width: 90%; width: 400px; padding: 0; }
-.modal::backdrop { background: rgba(0,0,0,0.8); }
-.modal-content { padding: 20px; }
-.modal img { width: 100%; border-radius: var(--radius); margin-bottom: 15px; }
+/* --- SIDEBAR --- */
+.sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    width: 280px;
+    height: 100%;
+    background: #1e1e1e;
+    /* Mantém escuro */
+    z-index: 200;
+    transition: 0.3s;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+}
 
-/* Admin Dashboard & Forms */
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-secondary); }
-.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 6px; border: none; background: #333; color: #fff; }
-.btn-primary { background-color: var(--accent-color); color: #000; padding: 12px; border: none; border-radius: 8px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
-.btn-secondary { background-color: #444; color: #fff; padding: 8px; border: none; border-radius: 6px; cursor: pointer; }
-.btn-danger { background-color: var(--danger); color: #fff; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;}
+.sidebar.open {
+    left: 0;
+}
 
-/* Dashboard Cards (Analytics) */
-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-.dash-card { background: #222; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #333; }
-.dash-card h4 { font-size: 0.8rem; color: #aaa; margin-bottom: 5px; }
-.dash-card .number { font-size: 1.5rem; font-weight: bold; color: var(--accent-color); }
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
-/* Coupon Field */
-.coupon-area { display: flex; gap: 10px; margin-top: 15px; }
-.coupon-msg { font-size: 0.8rem; margin-top: 5px; }
-.text-success { color: var(--success); }
-.text-error { color: var(--danger); }
+.sidebar-header h3 {
+    font-size: 2.6vh;
+    color: var(--accent-color);
+}
 
-/* Utilitários */
-.section-title { margin: 20px 0 10px; font-size: 1.2rem; font-weight: bolder; font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; border-bottom: 1px solid #fbbf24; color: #fbbf24; padding-bottom: 5px; }
-.badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; }
-.relative { position: relative; }
-.list-item { background:#222; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px; }
+.sidebar-footer {
+    a {
+        align-self: self;
+        color: var(--accent-color) !important;
+        font-weight: bold;
+        /* text-decoration: none; */
+        font-size: 2vh;
+        bottom: 2vh;
+        position: fixed;
+    }
 
-@media (min-width: 768px) {
-    .product-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-    .card-image { height: 240px; }
-};
+}
 
-/* --- Mantenha o CSS anterior e ADICIONE/SUBSTITUA isso no final --- */
+#close-sidebar {
+    background: none;
+    border: none;
+    color: white;
+}
 
-/* Badge de Tamanhos no Card */
-.sizes-badge {
-    font-size: 0.75rem;
-    color: #888;
-    margin-bottom: 5px;
+#close-sidebar span {
+    font-size: 4vh;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 150;
+    display: none;
+}
+
+.overlay.open {
     display: block;
 }
 
-/* Modal Layout - Quantidade */
-.qty-selector {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 15px 0;
-    background: #333;
-    padding: 10px;
-    border-radius: 8px;
-    width: fit-content;
+/* --- MODAL --- */
+.modal {
+    margin: auto;
+    border: none;
+    border-radius: var(--radius);
+    background: #1e1e1e;
+    /* Mantém escuro */
+    color: #fff;
+    max-width: 90%;
+    width: 400px;
+    padding: 0;
 }
-.qty-selector input {
-    width: 50px;
-    text-align: center;
-    background: transparent;
-    border: 1px solid #555;
-    color: white;
-    font-size: 1.1rem;
-    border-radius: 4px;
-}
-.qty-label { font-size: 0.9rem; color: #ccc; }
 
-/* --- CARROSSEL DE IMAGENS (Galeria) --- */
+.modal::backdrop {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+    padding: 20px;
+}
+
+.modal img {
+    width: 100%;
+    border-radius: var(--radius);
+    margin-bottom: 15px;
+}
+
+/* Slider / Galeria */
 .slider-container {
     position: relative;
     width: 100%;
-    height: 300px; /* Altura fixa para o slider no modal */
+    height: 300px;
     background: #000;
     border-radius: var(--radius);
     overflow: hidden;
@@ -201,15 +331,14 @@ h1{
 .slide img {
     width: 100%;
     height: 100%;
-    object-fit: contain; /* Mostra a imagem inteira sem cortar */
+    object-fit: contain;
 }
 
-/* Botões de Navegação do Slider */
 .slider-btn {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     color: white;
     border: none;
     padding: 10px;
@@ -220,11 +349,15 @@ h1{
     align-items: center;
     justify-content: center;
 }
-.slider-btn:hover { background: var(--accent-color); color: black; }
-.prev-btn { left: 10px; }
-.next-btn { right: 10px; }
 
-/* Indicadores (Bolinhas) */
+.prev-btn {
+    left: 10px;
+}
+
+.next-btn {
+    right: 10px;
+}
+
 .slider-dots {
     position: absolute;
     bottom: 10px;
@@ -233,37 +366,135 @@ h1{
     display: flex;
     gap: 5px;
 }
+
 .dot {
     width: 8px;
     height: 8px;
-    background: rgba(255,255,255,0.5);
+    background: rgba(255, 255, 255, 0.5);
     border-radius: 50%;
     cursor: pointer;
 }
-.dot.active { background: var(--accent-color); transform: scale(1.2); };
 
-/* --- Mantenha o CSS anterior e ADICIONE isso ao final --- */
-
-/* 1. Descrição na Vitrine (Card) */
-.card-desc {
-    font-size: 0.8rem;
-    color: #888;
-    margin-bottom: 8px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* Mostra apenas 2 linhas */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.4;
-    height: 2.8em; /* Altura fixa para alinhar botões */
+.dot.active {
+    background: var(--accent-color);
+    transform: scale(1.2);
 }
 
-/* 2. Admin: Linha Selecionável */
+.qty-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 15px 0;
+    background: #333;
+    padding: 10px;
+    border-radius: 8px;
+    width: fit-content;
+}
+
+.qty-selector input {
+    width: 50px;
+    text-align: center;
+    background: transparent;
+    border: 1px solid #555;
+    color: white;
+    font-size: 1.1rem;
+    border-radius: 4px;
+}
+
+/* --- ADMIN & FORMS --- */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: none;
+    background: #333;
+    color: #fff;
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    color: #000;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    width: 100%;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.btn-secondary {
+    background-color: #444;
+    color: #fff;
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: #fff;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Dashboard Cards */
+.dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.dash-card {
+    background: #222;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #333;
+}
+
+.dash-card h4 {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-bottom: 5px;
+}
+
+.dash-card .number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+/* Listas Admin */
 .list-item {
-    position: relative; /* Necessário para o swipe */
+    background: #222;
+    padding: 10px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    position: relative;
     transition: background 0.2s, transform 0.2s;
     cursor: pointer;
-    overflow: hidden; /* Para esconder o botão de delete do swipe */
+    overflow: hidden;
 }
 
 .list-item.selected {
@@ -271,11 +502,6 @@ h1{
     border-left: 4px solid var(--accent-color);
 }
 
-.list-item:hover {
-    background-color: #333;
-}
-
-/* 3. Admin: Swipe no Mobile */
 .swipe-container {
     position: relative;
     width: 100%;
@@ -285,7 +511,7 @@ h1{
 .swipe-content {
     position: relative;
     z-index: 2;
-    background: #222; /* Cor igual ao fundo do list-item */
+    background: #222;
     transition: transform 0.3s ease-out;
     width: 100%;
     padding: 10px;
@@ -295,7 +521,6 @@ h1{
     justify-content: space-between;
 }
 
-/* Botão de Delete escondido atrás */
 .swipe-delete-btn {
     position: absolute;
     right: 0;
@@ -308,12 +533,85 @@ h1{
     align-items: center;
     justify-content: center;
     z-index: 1;
-    border-top-right-radius: 6px;
-    border-bottom-right-radius: 6px;
     font-weight: bold;
     cursor: pointer;
 }
 
 .list-item.swiped .swipe-content {
-    transform: translateX(-80px); /* Move para esquerda */
+    transform: translateX(-80px);
+}
+
+/* Carrinho e Cupons */
+.coupon-area {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.coupon-msg {
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
+.text-success {
+    color: var(--success);
+}
+
+.text-error {
+    color: var(--danger);
+}
+
+/* --- FOOTER --- */
+.app-footer {
+    background-color: #000;
+    color: #666;
+    text-align: center;
+    padding: 20px;
+    width: 100%;
+    border-top: 1px solid #333;
+    margin-top: 5vw;
+    position: relative;
+    z-index: 10;
+    height: 8vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.app-footer p {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.app-footer p img {
+    width: 2vw;
+}
+
+.app-footer strong {
+    background: linear-gradient(90deg, #4d9fff, #ff4d4d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.icon-btn span {
+    font-size: 5vh;
+}
+
+@media (min-width: 768px) {
+    .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+
+    .card-image {
+        height: 240px;
+    }
 }

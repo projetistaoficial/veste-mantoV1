@@ -58,7 +58,7 @@ export const Admin = {
             <input type="text" id="new-cat" placeholder="Nova Categoria">
             <button class="btn-secondary" onclick="window.addCategoryUI()">Add</button>
         </div>
-        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:30px;">
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:30px; color: white">
             ${store.state.categories.map(c => `<span style="background:#444; padding:5px 10px; border-radius:15px; font-size:0.9rem;">${c} <span onclick="window.deleteCategoryUI('${c}')" style="cursor:pointer; color:red; margin-left:5px;">&times;</span></span>`).join('')}
         </div>
 

@@ -20,7 +20,9 @@ body.light-mode {
     color: #1a1a1a !important;
     /* Texto escuro para ler no fundo claro */
 }
-
+body::-webkit-scrollbar {
+  display: none;
+}
 /* Reset Básico */
 * {
     box-sizing: border-box;
@@ -240,19 +242,6 @@ h1 {
     color: var(--accent-color);
 }
 
-.sidebar-footer {
-    a {
-        align-self: self;
-        color: var(--accent-color) !important;
-        font-weight: bold;
-        /* text-decoration: none; */
-        font-size: 2vh;
-        bottom: 2vh;
-        position: fixed;
-    }
-
-}
-
 #close-sidebar {
     background: none;
     border: none;
@@ -277,6 +266,22 @@ h1 {
 .overlay.open {
     display: block;
 }
+
+.sidebar-footer {
+    a {
+
+        position: absolute;
+        bottom: 2vh;
+        color: var(--accent-color) !important;
+        font-weight: bold;
+        font-size: 1.9vh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        /* bottom: 2vh; */
+        /* position: fixed; */
+    }
+
+}
+
 
 /* --- MODAL --- */
 .modal {
@@ -586,7 +591,7 @@ h1 {
 }
 
 .app-footer p img {
-    width: 2vw;
+    width: 3.5vh;
 }
 
 .app-footer strong {

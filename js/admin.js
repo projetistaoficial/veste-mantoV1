@@ -10,30 +10,34 @@ function formatPrice(value) {
 
 
 export const Admin = {
-    // Define a aba inicial como o inventário/config. 'all' é o estado padrão da visualização de produtos.
     currentTab: 'all', 
-    searchQuery: '',
+    searchQuery: '', 
     selectedRowId: null,
 
-    // NOVOS ESTADOS DE FILTRO DE PEDIDOS
-    orderFilterStatus: 'all', // 'all', 'approved', 'pending', 'rejected'
-    filterStartDate: '',      // Data de início para o filtro de período (AAAA-MM-DD)
-    filterEndDate: '',        // Data de fim para o filtro de período (AAAA-MM-DD)
+    // NOVO ESTADO: Controla a visibilidade dos filtros de Pedido
+    orderFiltersVisible: true, // Começa visível por padrão
+
+    // ESTADOS DE FILTRO DE PEDIDOS
+    orderFilterStatus: 'all', 
+    filterStartDate: '',      
+    filterEndDate: '',        
 
     // Variáveis de Swipe
     touchStartX: 0,
     touchEndX: 0,
 
     switchTab(tab) {
-        // Se a tab principal for 'inventory', garante que o estado de sub-aba volte para 'all' (Inventário de Produtos)
         if (tab === 'inventory') {
             this.currentTab = 'all';
         } else {
-            // Se for 'orders', 'all' ou 'cats', define diretamente.
             this.currentTab = tab;
         }
-        // Limpa a busca apenas se for para a tab de pedidos
-        if (tab === 'inventory') this.searchQuery = ''; 
+        // Limpa a busca ao mudar de aba
+        this.searchQuery = '';
+        // Reseta a visibilidade dos filtros ao trocar de aba para 'orders'
+        if (tab === 'orders') {
+            this.orderFiltersVisible = true;
+        }
         this.render();
     },
 
@@ -42,7 +46,12 @@ export const Admin = {
         this.render();
     },
     
-    // NOVO MÉTODO: Define o filtro de pedidos e re-renderiza
+    // NOVO MÉTODO: Alterna a visibilidade dos filtros de pedido
+    toggleOrderFilters() {
+        this.orderFiltersVisible = !this.orderFiltersVisible;
+        this.render();
+    },
+
     setOrderFilter(type, value) {
         if (type === 'status') {
             this.orderFilterStatus = value;
@@ -54,11 +63,11 @@ export const Admin = {
         this.render(); 
     },
 
-    // NOVO MÉTODO: Limpa todos os filtros de pedidos
     clearOrderFilters() {
         this.orderFilterStatus = 'all';
         this.filterStartDate = '';
         this.filterEndDate = '';
+        this.searchQuery = ''; 
         this.render();
     },
 
@@ -76,7 +85,6 @@ export const Admin = {
         const settings = store.state.settings || { allowNegativeStock: false };
         const pendingOrdersCount = store.state.orders.filter(o => o.status === 'pending').length;
 
-        // Se o estado for 'all' ou 'cats', consideramos que estamos na seção principal de Inventário/Config.
         const isInventoryConfigActive = this.currentTab !== 'orders';
 
         let html = `
@@ -105,10 +113,9 @@ export const Admin = {
         // ----------------------------------------------------
 
         if (this.currentTab === 'orders') {
-            // Renderiza o conteúdo de Pedidos
             html += this.renderOrders();
         } else {
-            // Renderiza o conteúdo Inventário/Config (para os estados 'all' e 'cats')
+            // ... [O restante da renderização do Inventário/Config permanece inalterado]
             
             html += `
                 <div class="dash-card" style="margin-bottom:15px; border:1px solid #444; background:#222; text-align:left; display:flex; align-items:center; gap:10px;">
@@ -140,7 +147,7 @@ export const Admin = {
                     <button class="btn-secondary" onclick="window.addCouponUI()">Criar</button>
                 </div>
                 <div style="margin-bottom:30px;">
-                    ${store.state.coupons.map(c => `<div class="list-item"  style="color: white"><span><strong>${c.code}</strong> (${c.discount}%)</span><button onclick="window.deleteCouponUI('${c.code}')" style="color:red; background:none; border:none;">🗑️</button></div>`).join('')}
+                    ${store.state.coupons.map(c => `<div class="list-item"  style="color: white"><span><strong>${c.code}</strong> (${c.discount}%)</span><button onclick="window.deleteCouponUI('${c.code}')" style="color:red; background:none; border:none;">🗑️</button></div>`).join('')}
                 </div>
 
                 <h3 class="section-title">Produto</h3>
@@ -168,11 +175,11 @@ export const Admin = {
                 
                 <div style="position:relative; margin-bottom:15px;">
                     <input type="text" 
-                                id="inventory-search"
-                                placeholder="Pesquisar produto..." 
-                                value="${this.searchQuery}" 
-                                onkeyup="window.searchInventory(this.value)" 
-                                style="width:100%; padding:10px 10px 10px 40px; border-radius:20px; border:1px solid #444; background:#222; color:white;">
+                                 id="inventory-search"
+                                 placeholder="Pesquisar produto..." 
+                                 value="${this.searchQuery}" 
+                                 onkeyup="window.searchInventory(this.value)" 
+                                 style="width:100%; padding:10px 10px 10px 40px; border-radius:20px; border:1px solid #444; background:#222; color:white;">
                     <span class="material-icons" style="position:absolute; left:10px; top:8px; color:#888;">search</span>
                 </div>
 
@@ -185,7 +192,6 @@ export const Admin = {
 
             let filteredProducts = store.state.products.filter(p => p.name.toLowerCase().includes(this.searchQuery));
 
-            // A renderização do inventário usa 'all' ou 'cats'
             if (this.currentTab === 'all') { 
                 html += this.renderProductList(filteredProducts);
             } else if (this.currentTab === 'cats') {
@@ -202,16 +208,13 @@ export const Admin = {
         }
         
         // ----------------------------------------------------
-        // FIM DA LÓGICA DE RENDERIZAÇÃO
-        // ----------------------------------------------------
 
-        html += `</div>`; // Fecha admin-content-area
+        html += `</div>`; 
         app.innerHTML = html;
 
         this.attachKeyboardEvents();
 
-        // --- CORREÇÃO DO FOCO NA BUSCA ---
-        const searchInput = document.getElementById('inventory-search');
+        const searchInput = document.getElementById('inventory-search') || document.getElementById('order-search');
         if (searchInput && this.searchQuery) {
             searchInput.focus();
             const val = searchInput.value;
@@ -220,23 +223,31 @@ export const Admin = {
         }
     },
     
-    // MÉTODO ATUALIZADO: Renderiza a lista de pedidos com filtros e total de vendas
     renderOrders() {
-        let orders = store.state.orders.sort((a, b) => b.id - a.id); // Mais recente primeiro
+        let orders = store.state.orders.sort((a, b) => b.id - a.id); 
         let totalSalesValue = 0;
         
-        // 1. FILTRAGEM POR STATUS
+        const currentSearchQuery = this.searchQuery.trim();
+        
+        // 1. FILTRAGEM POR NÚMERO DE PEDIDO (ID)
+        if (currentSearchQuery) {
+            orders = orders.filter(o => 
+                o.id.toString().includes(currentSearchQuery) || 
+                (`#${o.id.toString().slice(-4)}`).includes(currentSearchQuery)
+            );
+        }
+
+        // 2. FILTRAGEM POR STATUS
         if (this.orderFilterStatus !== 'all') {
             orders = orders.filter(o => o.status === this.orderFilterStatus);
         }
 
-        // 2. FILTRAGEM POR PERÍODO (Entre Datas)
+        // 3. FILTRAGEM POR PERÍODO (Entre Datas)
         const start = this.filterStartDate ? new Date(this.filterStartDate) : null;
         const end = this.filterEndDate ? new Date(this.filterEndDate) : null;
         
         if (start || end) {
             orders = orders.filter(order => {
-                // A data é armazenada como DD/MM/AAAA, precisa ser convertida para um formato compatível com new Date(AAAA-MM-DD)
                 const dateParts = order.date.split(',')[0].split('/');
                 const orderDate = new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`); 
                 
@@ -244,7 +255,6 @@ export const Admin = {
                 if (start && orderDate < start) dateMatch = false;
                 
                 if (end) {
-                    // Para incluir o dia final, verificamos se a data do pedido é menor que o *próximo* dia (end + 1 dia)
                     const nextDay = new Date(end);
                     nextDay.setDate(nextDay.getDate() + 1);
                     if (orderDate >= nextDay) dateMatch = false;
@@ -253,12 +263,15 @@ export const Admin = {
             });
         }
         
-        // 3. CÁLCULO DO TOTAL DE VENDAS FINALIZADAS (Apenas 'approved')
-        // Recalculamos sobre o array original de pedidos para obter o total de vendas GERAL (independentemente do filtro de data/status)
+        // 4. CÁLCULO DO TOTAL DE VENDAS FINALIZADAS (Apenas 'approved')
         const allApprovedOrders = store.state.orders
             .filter(o => o.status === 'approved');
             
         totalSalesValue = allApprovedOrders.reduce((acc, o) => acc + o.total, 0);
+
+        // Estilo para a seta (arrow)
+        const arrowStyle = this.orderFiltersVisible ? 'transform: rotate(180deg);' : '';
+        const filtersDisplay = this.orderFiltersVisible ? 'display:grid;' : 'display:none;';
 
 
         let orderHtml = `
@@ -268,9 +281,28 @@ export const Admin = {
                 <h3 style="color:var(--success); margin:5px 0 0 0;">${formatPrice(totalSalesValue)}</h3>
             </div>
             
-            <h3 class="section-title">Filtros</h3>
-            <div class="filter-controls" style="margin-bottom:20px; padding:15px; background:#222; border-radius:8px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div style="margin-bottom:10px; padding:10px; background:#333; border-radius:8px;">
+                <h3 class="section-title" 
+                    onclick="Admin.toggleOrderFilters()"
+                    style="margin:0; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                    Filtros de Pedido
+                    <span class="material-icons" style="transition: transform 0.3s; ${arrowStyle}">expand_more</span>
+                </h3>
+            </div>
+
+            <div class="filter-controls" 
+                 style="margin-bottom:20px; padding:15px; background:#222; border-radius:8px; grid-template-columns: 1fr 1fr; gap:10px; ${filtersDisplay}">
                 
+                <div style="grid-column: 1 / -1; position:relative;">
+                    <label for="order-search">Buscar Ref. Pedido (Ex: #1234):</label>
+                    <input type="text" 
+                                 id="order-search"
+                                 placeholder="Buscar por ID..." 
+                                 value="${this.searchQuery}" 
+                                 onkeyup="Admin.setSearch(this.value)" 
+                                 style="width:100%; padding:10px 10px 10px 10px; border-radius:4px; border:1px solid #444; background:#333; color:white;">
+                </div>
+
                 <div style="grid-column: 1 / -1;"><label for="order-status-filter">Status:</label>
                 <select id="order-status-filter" onchange="Admin.setOrderFilter('status', this.value)" style="width:100%; padding:8px; background:#333; color:white; border:none; border-radius:4px;">
                     <option value="all">Todos os Pedidos</option>
@@ -298,8 +330,9 @@ export const Admin = {
 
         orderHtml += orders.map(o => {
             const isPending = o.status === 'pending';
-            const statusColor = isPending ? 'orange' : (o.status === 'approved' ? 'var(--success)' : 'red');
-            const statusText = isPending ? 'PENDENTE' : (o.status === 'approved' ? 'APROVADO' : 'REJEITADO');
+            const isApproved = o.status === 'approved'; // Nova variável
+            const statusColor = isPending ? 'orange' : (isApproved ? 'var(--success)' : 'red');
+            const statusText = isPending ? 'PENDENTE' : (isApproved ? 'APROVADO' : 'REJEITADO / ESTORNADO'); // Atualizado
             const orderRef = `#${o.id.toString().slice(-4)}`;
 
             const itemsList = o.items.map(i => 
@@ -328,6 +361,12 @@ export const Admin = {
                             <button class="btn-danger" style="flex:1;" onclick="window.rejectOrder(${o.id})">Rejeitar</button>
                         </div>
                     ` : ''}
+
+                    ${isApproved ? `
+                        <div style="margin-top:10px;">
+                            <button class="btn-danger" style="width:100%; background:darkred;" onclick="window.refundOrder(${o.id})">Estornar Venda (Reembolso)</button>
+                        </div>
+                    ` : ''}
                 </div>
             `;
         }).join('');
@@ -335,6 +374,7 @@ export const Admin = {
         return orderHtml;
     },
 
+    // ... [Os métodos restantes (renderProductList, attachKeyboardEvents, etc.) permanecem inalterados]
     renderProductList(products) {
         if(products.length === 0) return '<p style="color:#666; text-align:center;">Nenhum produto.</p>';
         

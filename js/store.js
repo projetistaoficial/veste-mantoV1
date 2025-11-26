@@ -106,6 +106,7 @@ export const store = {
 
     rejectOrder(orderId) {
         const order = this.state.orders.find(o => o.id === orderId);
+        // Pedidos pending podem ser rejeitados (sem estorno de estoque, pois nunca saiu)
         if (order && order.status === 'pending') {
             order.status = 'rejected';
             this._persist(STORAGE_KEYS.ORDERS, this.state.orders);
@@ -114,6 +115,41 @@ export const store = {
         return false;
     },
     
+    // NOVO MÉTODO: Lógica de Estorno
+    refundOrder(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        
+        if (!order || order.status !== 'approved') {
+            console.error(`Pedido ${orderId} não encontrado ou não está aprovado.`);
+            return false;
+        }
+
+        if (confirm(`Tem certeza que deseja ESTORNAR o pedido #${orderId.toString().slice(-4)}? Isso DEVOLVERÁ os itens ao estoque.`)) {
+            // 1. Devolver o estoque e reverter o 'sold'
+            order.items.forEach(item => {
+                const product = this.state.products.find(p => p.id == item.id);
+                if (product) {
+                    product.stock = (product.stock || 0) + item.qty; // Adiciona de volta ao estoque
+                    product.sold = Math.max(0, (product.sold || 0) - item.qty); // Diminui de vendidos
+                }
+            });
+            
+            // 2. Atualizar o status do pedido
+            order.status = 'rejected'; 
+            
+            // 3. Persistir as alterações
+            this._persist(STORAGE_KEYS.ORDERS, this.state.orders);
+            this._persist(STORAGE_KEYS.PRODUCTS, this.state.products);
+            
+            // 4. Se houver conversões, diminui (opcional, mas bom para precisão)
+            this.state.stats.conversions = Math.max(0, this.state.stats.conversions - 1);
+            this._persist(STORAGE_KEYS.STATS, this.state.stats);
+            
+            return true;
+        }
+        return false;
+    },
+
     getSalesTotals() {
         const approvedOrders = this.state.orders.filter(o => o.status === 'approved');
         
@@ -281,3 +317,13 @@ export const store = {
 
 // 3. Executa a inicialização após definir o objeto 'store'
 store._initStore();
+
+// Expondo a função para o escopo global (assumindo que o Admin usa window.refundOrder)
+window.refundOrder = (id) => {
+    const success = store.refundOrder(id);
+    // Assumindo que você tem uma forma de renderizar o Admin (e.g., Admin.render())
+    if (success && window.Admin && window.Admin.render) {
+        window.Admin.render();
+    }
+    return success;
+};

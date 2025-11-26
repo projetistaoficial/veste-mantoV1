@@ -6,7 +6,8 @@ const STORAGE_KEYS = {
     CATEGORIES: 'vm_categories',
     COUPONS: 'vm_coupons',
     STATS: 'vm_stats',
-    SETTINGS: 'vm_settings'
+    SETTINGS: 'vm_settings',
+    ORDERS: 'vm_orders' 
 };
 
 const initialProducts = [
@@ -17,7 +18,9 @@ const initialProducts = [
 const initialCategories = ['Masculino', 'Feminino', 'Nike', 'Adidas', 'Promoções'];
 const initialStats = { visits: 0, conversions: 0 };
 const initialSettings = { allowNegativeStock: false };
+const initialOrders = [];
 
+// Definição do Objeto Store
 export const store = {
     // 1. Inicializa o estado com dados lidos do LocalStorage
     state: {
@@ -26,6 +29,7 @@ export const store = {
         coupons: JSON.parse(localStorage.getItem(STORAGE_KEYS.COUPONS)),
         stats: JSON.parse(localStorage.getItem(STORAGE_KEYS.STATS)),
         cart: JSON.parse(localStorage.getItem(STORAGE_KEYS.CART)),
+        orders: JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS)),
         isAdmin: localStorage.getItem(STORAGE_KEYS.ADMIN_LOGGED) === 'true',
         activeCoupon: null,
         settings: JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS))
@@ -58,10 +62,74 @@ export const store = {
             this.state.cart = [];
             this._persist(STORAGE_KEYS.CART, []);
         }
+        // ADICIONADO: Inicializa Pedidos
+        if (!this.state.orders) {
+            this.state.orders = initialOrders;
+            this._persist(STORAGE_KEYS.ORDERS, initialOrders);
+        }
         if (!this.state.settings) {
             this.state.settings = initialSettings;
             this._persist(STORAGE_KEYS.SETTINGS, initialSettings);
         }
+    },
+
+    /* --- PEDIDOS (Gestão e Métricas) --- */
+    
+    createOrder(cartItems, total, discount, couponCode) {
+        const newOrder = {
+            id: Date.now(), 
+            date: new Date().toLocaleString('pt-BR'),
+            items: [...cartItems], 
+            total: total,
+            discount: discount,
+            coupon: couponCode,
+            status: 'pending' 
+        };
+        this.state.orders.unshift(newOrder); 
+        this._persist(STORAGE_KEYS.ORDERS, this.state.orders);
+        return newOrder.id;
+    },
+
+    approveOrder(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (order && order.status === 'pending') {
+            // Ação principal: Baixa o estoque e contabiliza a conversão AGORA
+            this.decreaseStock(order.items);
+            this.logConversion();
+            
+            order.status = 'approved';
+            this._persist(STORAGE_KEYS.ORDERS, this.state.orders);
+            return true;
+        }
+        return false;
+    },
+
+    rejectOrder(orderId) {
+        const order = this.state.orders.find(o => o.id === orderId);
+        if (order && order.status === 'pending') {
+            order.status = 'rejected';
+            this._persist(STORAGE_KEYS.ORDERS, this.state.orders);
+            return true;
+        }
+        return false;
+    },
+    
+    getSalesTotals() {
+        const approvedOrders = this.state.orders.filter(o => o.status === 'approved');
+        
+        // 1. Calcular a soma dos totais de todos os pedidos aprovados
+        const totalSales = approvedOrders.reduce((acc, order) => acc + order.total, 0);
+        
+        // 2. Contar pedidos por status para o dashboard
+        const totalApproved = approvedOrders.length;
+        const totalPending = this.state.orders.filter(o => o.status === 'pending').length;
+
+        // 3. Retornar um objeto de métricas
+        return {
+            totalSales: totalSales,
+            totalApprovedOrders: totalApproved,
+            totalPendingOrders: totalPending
+        };
     },
 
     // --- CONFIGURAÇÕES ---
@@ -138,7 +206,6 @@ export const store = {
         return { success: false }; 
     },
     
-    // CORREÇÃO: Função para remover o cupom ativo
     removeActiveCoupon() {
         this.state.activeCoupon = null;
     },
@@ -146,19 +213,16 @@ export const store = {
     // --- OUTROS ---
     logVisit() { if (!sessionStorage.getItem('visited')) { this.state.stats.visits++; this._persist(STORAGE_KEYS.STATS, this.state.stats); sessionStorage.setItem('visited', 'true'); } },
     logConversion() { this.state.stats.conversions++; this._persist(STORAGE_KEYS.STATS, this.state.stats); },
-    login(password) { if (password === 'admin123') { this.state.isAdmin = true; localStorage.setItem(STORAGE_KEYS.ADMIN_LOGGED, 'true'); return true; } return false; },
+    // Renomeei para loginAdmin para evitar conflito com a função global
+    loginAdmin(password) { if (password === 'admin123') { this.state.isAdmin = true; localStorage.setItem(STORAGE_KEYS.ADMIN_LOGGED, 'true'); return true; } return false; },
     logout() { this.state.isAdmin = false; localStorage.removeItem(STORAGE_KEYS.ADMIN_LOGGED); },
 
-     // --- Carrinho (LÓGICA UNIFICADA) ---
+    // --- Carrinho (LÓGICA UNIFICADA) ---
     addToCart(product, size, qty = 1) {
         const stock = parseInt(product.stock);
         const quantity = parseInt(qty) || 1;
-
-        // Garante que settings existe
         const settings = this.state.settings || initialSettings;
 
-        // 1. Verificação Inicial de Estoque
-        // Só bloqueia SE a configuração de estoque negativo estiver DESATIVADA
         if (!settings.allowNegativeStock && stock < quantity) {
             alert(`Estoque insuficiente! Disponível: ${stock}`);
             return false;
@@ -167,14 +231,12 @@ export const store = {
         const existing = this.state.cart.find(item => item.id == product.id && item.size === size);
 
         if (existing) {
-            // 2. Verificação ao somar quantidade
             if (!settings.allowNegativeStock && (existing.qty + quantity > stock)) {
                 alert(`Limite de estoque atingido! Você já tem ${existing.qty} no carrinho.`);
                 return false;
             }
             existing.qty += quantity;
         } else {
-            // Imagem
             let thumb = 'assets/placeholder.png';
             if (product.image) thumb = product.image;
             if (product.images && product.images.length > 0) thumb = product.images[0];
@@ -209,7 +271,6 @@ export const store = {
     },
     getCartTotal() {
         const subtotal = this.state.cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-        // Aplica o desconto se o cupom for válido e tiver um valor (discount)
         const discountValue = this.state.activeCoupon?.discount || 0;
         const discount = this.state.activeCoupon ? (subtotal * discountValue / 100) : 0;
         return { subtotal, total: subtotal - discount, discount };
@@ -218,5 +279,5 @@ export const store = {
     _persist(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 };
 
-// Executa a inicialização após definir o objeto 'store'
+// 3. Executa a inicialização após definir o objeto 'store'
 store._initStore();

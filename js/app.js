@@ -2,18 +2,43 @@ import { store } from './store.js';
 import { UI } from './ui.js';
 import { Admin } from './admin.js';
 
+// --- CORREÇÃO CRÍTICA: EXPOSIÇÃO GLOBAL ---
+// 1. Torna o objeto Admin acessível para o HTML (para chamadas como Admin.switchTab)
+window.Admin = Admin;
+// 2. Torna o objeto UI acessível para que os outros arquivos possam chamar a renderização
+window.UI = UI; 
+
 const WHATSAPP_NUMBER = "5511941936976"; 
 let currentSlideIndex = 0; 
+
+/* --- FUNÇÃO DE TOAST (POPUP) --- */
+window.showToast = (message, type = 'success', duration = 1500) => {
+    let toast = document.getElementById('toast-message');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-message';
+        document.body.appendChild(toast);
+    }
+
+    // Adiciona classe do tipo (success, error, info)
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    // Força reflow para reiniciar animação se chamado rapidamente
+    void toast.offsetWidth; 
+
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, duration);
+};
 
 /* --- TEMA (MODO CLARO/ESCURO) --- */
 window.toggleTheme = () => {
     document.body.classList.toggle('light-mode');
-    
-    // Salva a preferência
     const isLight = document.body.classList.contains('light-mode');
     localStorage.setItem('vm_theme', isLight ? 'light' : 'dark');
-    
-    // Atualiza o menu para trocar o ícone/texto
     window.fillSidebar(); 
 };
 
@@ -22,22 +47,18 @@ const fillSidebar = () => {
     const list = document.getElementById('category-list');
     if (!list) return;
 
-    // Verifica tema atual
     const isLight = document.body.classList.contains('light-mode');
     const themeIcon = isLight ? '🌙' : '☀️';
     const themeText = isLight ? 'Modo Escuro' : 'Modo Claro';
 
-    // Item do Tema
     let html = `
         <li onclick="window.toggleTheme()" style="cursor:pointer; padding:15px 10px; border-bottom:1px solid #333; font-weight:bold; color:var(--accent-color); display:flex; align-items:center; gap:10px;">
             <span style="font-size:1.2rem">${themeIcon}</span> ${themeText}
         </li>
     `;
 
-    // Item "Todos os Produtos"
     html += `<li onclick="window.location.hash='#/'; document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open');" style="cursor:pointer; padding:10px; border-bottom:1px solid #333; list-style-type: none; font-weight: bold; font-size: 2vh">Todos os Produtos</li>`;
     
-    // Categorias
     store.state.categories.forEach(cat => {
         html += `<li onclick="window.location.hash='#/category/${encodeURIComponent(cat)}'; document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open');" style="cursor:pointer; padding:10px; border-bottom:1px solid #333;">${cat}</li>`;
     });
@@ -70,7 +91,7 @@ window.openProductModal = (id) => {
     const images = (p.images && p.images.length > 0) ? p.images : (p.image ? [p.image] : ['assets/placeholder.png']);
     currentSlideIndex = 0; 
 
-    // ADICIONADO: onclick="window.zoomImage(this.src)" para habilitar o zoom
+    // onclick="window.zoomImage(this.src)" para zoom
     const slidesHtml = images.map((img) => `<div class="slide"><img src="${img}" onclick="window.zoomImage(this.src)"></div>`).join('');
     const dotsHtml = images.length > 1 ? images.map((_, idx) => `<div class="dot ${idx===0?'active':''}" onclick="window.goToSlide(${idx})"></div>`).join('') : '';
     const arrowsHtml = images.length > 1 ? `<button class="slider-btn prev-btn" onclick="window.changeSlide(-1)">&#10094;</button><button class="slider-btn next-btn" onclick="window.changeSlide(1)">&#10095;</button>` : '';
@@ -128,20 +149,20 @@ window.confirmAdd = (id) => {
     const p = store.getProductById(id);
     const size = document.getElementById('selected-size').value;
     const qty = parseInt(document.getElementById('selected-qty').value) || 1;
-    if(store.addToCart(p, size, qty)) { document.getElementById('product-modal').close(); alert('Adicionado!'); } 
+    if(store.addToCart(p, size, qty)) { 
+        document.getElementById('product-modal').close(); 
+        window.showToast('Adicionado ao Carrinho!', 'success'); 
+    } 
 };
 
-
-/* --- NOVA FUNÇÃO DE ZOOM/TELA CHEIA --- */
+/* --- ZOOM EM TELA CHEIA --- */
 window.zoomImage = (src) => {
-    // Cria ou reutiliza o modal/overlay temporário para a visualização
     let zoomModal = document.getElementById('zoom-modal');
     if (!zoomModal) {
         zoomModal = document.createElement('dialog');
         zoomModal.id = 'zoom-modal';
-        zoomModal.className = 'zoom-modal'; // Classe para estilização no CSS
+        zoomModal.className = 'zoom-modal'; 
         zoomModal.onclick = (e) => {
-            // Se clicar no backdrop ou no próprio modal (fora da imagem), fecha
             if (e.target === zoomModal) {
                 zoomModal.close();
                 zoomModal.innerHTML = ''; 
@@ -149,15 +170,25 @@ window.zoomImage = (src) => {
         };
         document.body.appendChild(zoomModal);
     }
-
-    // Coloca a imagem em tamanho grande dentro do novo modal
     zoomModal.innerHTML = `<img src="${src}" class="zoom-image">`;
     zoomModal.showModal();
 };
 
 /* --- ADMIN --- */
-window.tryLogin = () => { if (store.login(document.getElementById('admin-pass').value)) Admin.render(); else alert('Senha incorreta!'); };
-window.toggleStockConfig = () => { store.toggleNegativeStock(); };
+window.tryLogin = () => { 
+    // CORREÇÃO: Chama store.loginAdmin (função que definimos no store.js)
+    if (store.loginAdmin(document.getElementById('admin-pass').value)) {
+        Admin.render();
+        window.showToast('Bem-vindo!', 'success');
+    } else {
+        window.showToast('Senha incorreta!', 'error');
+    }
+};
+window.toggleStockConfig = () => { 
+    const status = store.toggleNegativeStock();
+    window.showToast(`Venda sem estoque: ${status ? 'ON' : 'OFF'}`, 'info');
+    Admin.render(); // Adicionado para forçar a re-renderização e atualizar o checkbox
+};
 
 // INTERAÇÕES DE SWIPE/TOQUE
 let touchStartX = 0;
@@ -173,10 +204,13 @@ function handleSwipeGesture(id) {
 }
 
 // SELEÇÃO DE LINHA
+// A função selectRow também precisa ser exposta no window
 window.selectRow = (id) => { 
     Admin.selectedRowId = id; 
-    Admin.render(); // Isso recarrega a lista para pintar a linha
+    Admin.render();
 };
+
+// CORREÇÃO: Expondo searchInventory para ser chamado pelo HTML no admin.js
 window.searchInventory = (val) => { Admin.setSearch(val); };
 
 // SALVAR
@@ -190,7 +224,7 @@ window.saveProductForm = () => {
     const sizes = document.getElementById('prod-sizes').value.split(',').map(s => s.trim());
     const fileInput = document.getElementById('prod-imgs'); 
 
-    if(!name || !price || !stock) return alert('Preencha campos obrigatórios');
+    if(!name || !price || !stock) return window.showToast('Preencha campos obrigatórios', 'error');
 
     const finishSave = (imagesArray) => {
         let finalImages = imagesArray;
@@ -200,8 +234,13 @@ window.saveProductForm = () => {
         }
         const product = { id: id ? parseInt(id) : null, name, description: desc, price: parseFloat(price), stock: parseInt(stock), category, sizes, images: finalImages };
         store.saveProduct(product);
+        
+        // --- FEEDBACK VISUAL (TOAST) ---
+        window.showToast('Produto Salvo com Sucesso!', 'success', 500);
+        
         Admin.render();
         window.fillSidebar();
+        window.clearForm();
     };
     if (fileInput.files.length > 0) Admin.handleImagesUpload(fileInput.files, finishSave); else finishSave([]);
 };
@@ -242,39 +281,46 @@ window.clearForm = () => {
     const ids = ['prod-id', 'prod-name', 'prod-desc', 'prod-price', 'prod-stock', 'prod-sizes', 'prod-imgs'];
     ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
     const prev = document.getElementById('existing-imgs'); if(prev) prev.innerHTML = '';
+    Admin.selectedRowId = null; 
+    Admin.render();
+    window.showToast('Formulário Limpo', 'info');
 };
 
-window.deleteProduct = (id) => { if(confirm('Excluir?')) { store.deleteProduct(id); Admin.render(); window.fillSidebar(); } };
+window.deleteProduct = (id) => { 
+    if(confirm('Excluir?')) { 
+        store.deleteProduct(id); 
+        Admin.render(); 
+        window.fillSidebar(); 
+        window.showToast('Produto Excluído!', 'success');
+    } 
+};
 
 /* --- CATEGORIAS/CUPONS --- */
-window.addCategoryUI = () => { const v = document.getElementById('new-cat').value; if(v) { store.addCategory(v); Admin.render(); window.fillSidebar(); } };
-window.deleteCategoryUI = (n) => { if(confirm('Remover?')) { store.deleteCategory(n); Admin.render(); window.fillSidebar(); } };
-window.addCouponUI = () => { const c = document.getElementById('new-coupon-code').value; const v = document.getElementById('new-coupon-val').value; if(c && v) { store.addCoupon(c,v); Admin.render(); } };
-window.deleteCouponUI = (c) => { store.deleteCoupon(c); Admin.render(); };
+window.addCategoryUI = () => { const v = document.getElementById('new-cat').value; if(v) { store.addCategory(v); Admin.render(); window.fillSidebar(); window.showToast('Categoria Adicionada', 'success'); } };
+window.deleteCategoryUI = (n) => { if(confirm('Remover?')) { store.deleteCategory(n); Admin.render(); window.fillSidebar(); window.showToast('Categoria Removida', 'success'); } };
+window.addCouponUI = () => { const c = document.getElementById('new-coupon-code').value; const v = document.getElementById('new-coupon-val').value; if(c && v) { store.addCoupon(c,v); Admin.render(); window.showToast('Cupom Criado', 'success'); } };
+window.deleteCouponUI = (c) => { store.deleteCoupon(c); Admin.render(); window.showToast('Cupom Removido', 'success'); };
 
 /* --- CARRINHO --- */
-window.removeItem = (idx) => { store.removeFromCart(idx); UI.renderCart(); };
-window.applyCouponUI = () => { const c = document.getElementById('coupon-code').value; if(store.applyCoupon(c).success) UI.renderCart(); else alert('Inválido'); };
-
-// CORRIGIDO: Usa o método `removeActiveCoupon` da store, que foi adicionado no arquivo store.js
-window.removeCoupon = () => { 
-    store.removeActiveCoupon(); 
-    UI.renderCart(); 
-};
+window.removeItem = (idx) => { store.removeFromCart(idx); UI.renderCart(); window.showToast('Item Removido', 'info'); };
+window.applyCouponUI = () => { const c = document.getElementById('coupon-code').value; if(store.applyCoupon(c).success) { UI.renderCart(); window.showToast('Cupom Aplicado!', 'success'); } else window.showToast('Inválido', 'error'); };
+window.removeCoupon = () => { store.removeActiveCoupon(); UI.renderCart(); window.showToast('Cupom Removido', 'info'); };
 
 window.finalizeOrder = () => {
     const cart = store.state.cart;
     if (cart.length === 0) return;
     
-    store.logConversion(); 
-    store.decreaseStock(cart);
-    
+    // GESTÃO DE PEDIDOS: Cria pedido pendente em vez de baixar estoque direto
     const { subtotal, total, discount } = store.getCartTotal();
     const activeCoupon = store.state.activeCoupon;
+    const couponCode = activeCoupon ? activeCoupon.code : null;
     
-    const orderId = `#${Math.floor(Math.random() * 9000) + 1000}`;
+    // Cria pedido na Store
+    const orderId = store.createOrder(cart, total, discount, couponCode);
 
-    let msg = `Olá! Gostaria de finalizar o *Pedido ${orderId}*:\n\n`;
+    // Mensagem do WhatsApp
+    const orderRef = `#${orderId.toString().slice(-4)}`; // Pega os ultimos 4 digitos do ID
+    let msg = `Olá! Gostaria de finalizar o *Pedido ${orderRef}*:\n\n`;
     
     cart.forEach(i => {
         msg += `📦 *${i.name}*\n   └ Tam: ${i.size} | Qtd: ${i.qty} | R$ ${(i.price * i.qty).toFixed(2)}\n`;
@@ -292,16 +338,36 @@ window.finalizeOrder = () => {
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
     store.clearCart(); 
     window.location.hash = '#/';
+    window.showToast('Pedido Enviado! Aguardando Aprovação.', 'success', 3000);
+};
+
+/* --- FUNÇÕES DE APROVAÇÃO DE PEDIDOS (NOVO) --- */
+window.approveOrder = (orderId) => {
+    if(confirm('Confirmar pagamento e baixar estoque?')) {
+        if(store.approveOrder(orderId)) {
+            window.showToast('Pedido Aprovado! Estoque atualizado.', 'success');
+            Admin.render(); // Atualiza lista de pedidos (incluindo filtros e total de vendas)
+        } else {
+            window.showToast('Erro ao aprovar.', 'error');
+        }
+    }
+};
+
+window.rejectOrder = (orderId) => {
+    if(confirm('Rejeitar pedido?')) {
+        if(store.rejectOrder(orderId)) {
+            window.showToast('Pedido Rejeitado.', 'info');
+            Admin.render(); // Atualiza lista de pedidos (incluindo filtros)
+        }
+    }
 };
 
 /* --- START --- */
 window.addEventListener('hashchange', router);
 window.addEventListener('load', () => { 
-    // Verifica tema salvo ao carregar
     if (localStorage.getItem('vm_theme') === 'light') {
         document.body.classList.add('light-mode');
     }
-
     store.logVisit(); 
     window.fillSidebar(); 
     router(); 

@@ -1,23 +1,64 @@
 import { store } from './store.js';
 
-const formatPrice = (val) => `R$ ${parseFloat(val).toFixed(2).replace('.', ',')}`;
+function formatPrice(value) {
+    return value.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        minimumFractionDigits: 2,
+    });
+}
+
 
 export const Admin = {
-    currentTab: 'all',
+    // Define a aba inicial como o inventário/config. 'all' é o estado padrão da visualização de produtos.
+    currentTab: 'all', 
     searchQuery: '',
     selectedRowId: null,
+
+    // NOVOS ESTADOS DE FILTRO DE PEDIDOS
+    orderFilterStatus: 'all', // 'all', 'approved', 'pending', 'rejected'
+    filterStartDate: '',      // Data de início para o filtro de período (AAAA-MM-DD)
+    filterEndDate: '',        // Data de fim para o filtro de período (AAAA-MM-DD)
 
     // Variáveis de Swipe
     touchStartX: 0,
     touchEndX: 0,
 
     switchTab(tab) {
-        this.currentTab = tab;
+        // Se a tab principal for 'inventory', garante que o estado de sub-aba volte para 'all' (Inventário de Produtos)
+        if (tab === 'inventory') {
+            this.currentTab = 'all';
+        } else {
+            // Se for 'orders', 'all' ou 'cats', define diretamente.
+            this.currentTab = tab;
+        }
+        // Limpa a busca apenas se for para a tab de pedidos
+        if (tab === 'inventory') this.searchQuery = ''; 
         this.render();
     },
 
     setSearch(query) {
         this.searchQuery = query.toLowerCase();
+        this.render();
+    },
+    
+    // NOVO MÉTODO: Define o filtro de pedidos e re-renderiza
+    setOrderFilter(type, value) {
+        if (type === 'status') {
+            this.orderFilterStatus = value;
+        } else if (type === 'start') {
+            this.filterStartDate = value;
+        } else if (type === 'end') {
+            this.filterEndDate = value;
+        }
+        this.render(); 
+    },
+
+    // NOVO MÉTODO: Limpa todos os filtros de pedidos
+    clearOrderFilters() {
+        this.orderFilterStatus = 'all';
+        this.filterStartDate = '';
+        this.filterEndDate = '';
         this.render();
     },
 
@@ -33,114 +74,265 @@ export const Admin = {
         const inventoryValue = store.getInventoryValue();
         const totalProducts = store.state.products.length;
         const settings = store.state.settings || { allowNegativeStock: false };
+        const pendingOrdersCount = store.state.orders.filter(o => o.status === 'pending').length;
+
+        // Se o estado for 'all' ou 'cats', consideramos que estamos na seção principal de Inventário/Config.
+        const isInventoryConfigActive = this.currentTab !== 'orders';
 
         let html = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h2 class="section-title">Dashboard</h2>
             <button onclick="window.store.logout(); window.location.reload()" class="btn-danger">Sair</button>
         </div>
-
-        <div class="dash-card" style="margin-bottom:15px; border:1px solid #444; background:#222; text-align:left; display:flex; align-items:center; gap:10px;">
-            <input type="checkbox" id="stock-toggle" onchange="window.toggleStockConfig()" ${settings.allowNegativeStock ? 'checked' : ''} style="width:20px; height:20px;">
-            <div>
-                <strong style="color:var(--accent-color);">Venda Sem Estoque</strong><br>
-                <small style="color:#aaa;">Permitir compra com estoque zero.</small>
-            </div>
-        </div>
-
-        <div class="dash-grid">
-            <div class="dash-card"><h4>VISITAS / VENDAS</h4><div class="number">${stats.visits} / ${stats.conversions}</div></div>
-            <div class="dash-card"><h4>CAPITAL GIRO</h4><div class="number" style="color:#22c55e;">${formatPrice(inventoryValue)}</div><small>${totalProducts} produtos</small></div>
-        </div>
-
-        <h3 class="section-title">Categorias</h3>
-        <div class="form-group" style="display:flex; gap:10px;">
-            <input type="text" id="new-cat" placeholder="Nova Categoria">
-            <button class="btn-secondary" onclick="window.addCategoryUI()">Add</button>
-        </div>
-        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:30px; color: white">
-            ${store.state.categories.map(c => `<span style="background:#444; padding:5px 10px; border-radius:15px; font-size:0.9rem;">${c} <span onclick="window.deleteCategoryUI('${c}')" style="cursor:pointer; color:red; margin-left:5px;">&times;</span></span>`).join('')}
-        </div>
-
-        <h3 class="section-title">Cupons</h3>
-        <div class="form-group" style="display:flex; gap:10px;">
-            <input type="text" id="new-coupon-code" placeholder="Código">
-            <input type="number" id="new-coupon-val" placeholder="%" style="width:80px;">
-            <button class="btn-secondary" onclick="window.addCouponUI()">Criar</button>
-        </div>
-        <div style="margin-bottom:30px;">
-            ${store.state.coupons.map(c => `<div class="list-item"  style="color: white"><span><strong>${c.code}</strong> (${c.discount}%)</span><button onclick="window.deleteCouponUI('${c.code}')" style="color:red; background:none; border:none;">🗑️</button></div>`).join('')}
-        </div>
-
-        <h3 class="section-title">Produto</h3>
-        <div class="form-group" style="background:#333; padding:15px; border-radius:8px; margin-bottom:20px;" id="product-form-area">
-            <input type="hidden" id="prod-id">
-            <label>Nome:</label><input type="text" id="prod-name" placeholder="Nome" style="margin-bottom:10px;">
-            <label>Descrição:</label><textarea id="prod-desc" rows="3" placeholder="Descrição detalhada..." style="width:100%; padding:10px; margin-bottom:10px; background:#444; color:white; border:none;"></textarea>
-            <div style="display:flex; gap:5px; margin-bottom:10px;">
-                <div style="flex:1"><label>Preço:</label><input type="number" id="prod-price" placeholder="0.00" step="0.01"></div>
-                <div style="flex:1"><label>Estoque:</label><input type="number" id="prod-stock" placeholder="Qtd"></div>
-            </div>
-            <label>Categoria:</label><select id="prod-cat" style="margin-bottom:10px;">${store.state.categories.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
-            <label>Tamanhos:</label><input type="text" id="prod-sizes" placeholder="P, M, G" style="margin-bottom:10px;">
-            
-            <label>Fotos (Múltiplas):</label>
-            <input type="file" id="prod-imgs" accept="image/*" multiple style="margin-bottom:5px;">
-            
-            <div id="existing-imgs" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:15px;"></div>
-            
-            <button class="btn-primary" onclick="window.saveProductForm()">Salvar Produto</button>
-            <button class="btn-secondary" onclick="window.clearForm()" style="margin-top:5px; width:100%; background:#555;">Limpar / Cancelar</button>
-        </div>
-
-        <h3 class="section-title">Inventário</h3>
         
-        <div style="position:relative; margin-bottom:15px;">
-            <input type="text" 
-                   id="inventory-search"
-                   placeholder="Pesquisar produto..." 
-                   value="${this.searchQuery}" 
-                   onkeyup="window.searchInventory(this.value)" 
-                   style="width:100%; padding:10px 10px 10px 40px; border-radius:20px; border:1px solid #444; background:#222; color:white;">
-            <span class="material-icons" style="position:absolute; left:10px; top:8px; color:#888;">search</span>
+        <div style="display:flex; gap:10px; margin-bottom:15px; overflow-x: auto; padding-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 15px;">
+            <button onclick="Admin.switchTab('inventory')" 
+                    class="btn-secondary" 
+                    style="${isInventoryConfigActive ? 'background:var(--accent-color); color:black;' : ''}">Inventário & Config.</button>
+            
+            <button onclick="Admin.switchTab('orders')" 
+                    class="btn-secondary" 
+                    style="${this.currentTab === 'orders' ? 'background:var(--accent-color); color:black;' : ''}">
+                Pedidos 
+                ${pendingOrdersCount > 0 ? `<span class="badge" style="position:static; margin-left:5px; background:red;">${pendingOrdersCount}</span>` : ''}
+            </button>
         </div>
 
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <button onclick="import('./js/admin.js').then(m => m.Admin.switchTab('all'))" class="btn-secondary" style="${this.currentTab === 'all' ? 'background:var(--accent-color); color:black;' : ''}">Todos</button>
-            <button onclick="import('./js/admin.js').then(m => m.Admin.switchTab('cats'))" class="btn-secondary" style="${this.currentTab === 'cats' ? 'background:var(--accent-color); color:black;' : ''}">Por Categoria</button>
-        </div>
-        
-        <div style="display:grid; gap:10px;" id="product-list-container">`;
+        <div id="admin-content-area">`;
 
-        let filteredProducts = store.state.products.filter(p => p.name.toLowerCase().includes(this.searchQuery));
+        // ----------------------------------------------------
+        // LÓGICA DE RENDERIZAÇÃO
+        // ----------------------------------------------------
 
-        if (this.currentTab === 'all') {
-            html += this.renderProductList(filteredProducts);
+        if (this.currentTab === 'orders') {
+            // Renderiza o conteúdo de Pedidos
+            html += this.renderOrders();
         } else {
-            store.state.categories.forEach(cat => {
-                const prodsInCat = filteredProducts.filter(p => p.category === cat);
-                if (prodsInCat.length > 0) {
-                    html += `<h4 style="margin:15px 0 5px 0; color:var(--accent-color); border-bottom:1px solid #444">${cat}</h4>`;
-                    html += this.renderProductList(prodsInCat);
-                }
-            });
+            // Renderiza o conteúdo Inventário/Config (para os estados 'all' e 'cats')
+            
+            html += `
+                <div class="dash-card" style="margin-bottom:15px; border:1px solid #444; background:#222; text-align:left; display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" id="stock-toggle" onchange="window.toggleStockConfig()" ${settings.allowNegativeStock ? 'checked' : ''} style="width:20px; height:20px;">
+                    <div>
+                        <strong style="color:var(--accent-color);">Venda Sem Estoque</strong><br>
+                        <small style="color:#aaa;">Permitir compra com estoque zero.</small>
+                    </div>
+                </div>
+
+                <div class="dash-grid">
+                    <div class="dash-card"><h4>VISITAS / VENDAS</h4><div class="number">${stats.visits} / ${stats.conversions}</div></div>
+                    <div class="dash-card"><h4>CAPITAL GIRO</h4><div class="number" style="color:#22c55e;">${formatPrice(inventoryValue)}</div><small>${totalProducts} produtos</small></div>
+                </div>
+
+                <h3 class="section-title">Categorias</h3>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <input type="text" id="new-cat" placeholder="Nova Categoria">
+                    <button class="btn-secondary" onclick="window.addCategoryUI()">Add</button>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:30px; color: white">
+                    ${store.state.categories.map(c => `<span style="background:#444; padding:5px 10px; border-radius:15px; font-size:0.9rem;">${c} <span onclick="window.deleteCategoryUI('${c}')" style="cursor:pointer; color:red; margin-left:5px;">&times;</span></span>`).join('')}
+                </div>
+
+                <h3 class="section-title">Cupons</h3>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <input type="text" id="new-coupon-code" placeholder="Código">
+                    <input type="number" id="new-coupon-val" placeholder="%" style="width:80px;">
+                    <button class="btn-secondary" onclick="window.addCouponUI()">Criar</button>
+                </div>
+                <div style="margin-bottom:30px;">
+                    ${store.state.coupons.map(c => `<div class="list-item"  style="color: white"><span><strong>${c.code}</strong> (${c.discount}%)</span><button onclick="window.deleteCouponUI('${c.code}')" style="color:red; background:none; border:none;">🗑️</button></div>`).join('')}
+                </div>
+
+                <h3 class="section-title">Produto</h3>
+                <div class="form-group" style="background:#333; padding:15px; border-radius:8px; margin-bottom:20px;" id="product-form-area">
+                    <input type="hidden" id="prod-id">
+                    <label>Nome:</label><input type="text" id="prod-name" placeholder="Nome" style="margin-bottom:10px;">
+                    <label>Descrição:</label><textarea id="prod-desc" rows="3" placeholder="Descrição detalhada..." style="width:100%; padding:10px; margin-bottom:10px; background:#444; color:white; border:none;"></textarea>
+                    <div style="display:flex; gap:5px; margin-bottom:10px;">
+                        <div style="flex:1"><label>Preço:</label><input type="number" id="prod-price" placeholder="0.00" step="0.01"></div>
+                        <div style="flex:1"><label>Estoque:</label><input type="number" id="prod-stock" placeholder="Qtd"></div>
+                    </div>
+                    <label>Categoria:</label><select id="prod-cat" style="margin-bottom:10px;">${store.state.categories.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+                    <label>Tamanhos:</label><input type="text" id="prod-sizes" placeholder="P, M, G" style="margin-bottom:10px;">
+                    
+                    <label>Fotos (Múltiplas):</label>
+                    <input type="file" id="prod-imgs" accept="image/*" multiple style="margin-bottom:5px;">
+                    
+                    <div id="existing-imgs" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:15px;"></div>
+                    
+                    <button class="btn-primary" onclick="window.saveProductForm()">Salvar Produto</button>
+                    <button class="btn-secondary" onclick="window.clearForm()" style="margin-top:5px; width:100%; background:#555;">Limpar / Cancelar</button>
+                </div>
+
+                <h3 class="section-title">Inventário</h3>
+                
+                <div style="position:relative; margin-bottom:15px;">
+                    <input type="text" 
+                                id="inventory-search"
+                                placeholder="Pesquisar produto..." 
+                                value="${this.searchQuery}" 
+                                onkeyup="window.searchInventory(this.value)" 
+                                style="width:100%; padding:10px 10px 10px 40px; border-radius:20px; border:1px solid #444; background:#222; color:white;">
+                    <span class="material-icons" style="position:absolute; left:10px; top:8px; color:#888;">search</span>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <button onclick="Admin.switchTab('all')" class="btn-secondary" style="${this.currentTab === 'all' ? 'background:var(--accent-color); color:black;' : ''}">Todos</button>
+                    <button onclick="Admin.switchTab('cats')" class="btn-secondary" style="${this.currentTab === 'cats' ? 'background:var(--accent-color); color:black;' : ''}">Por Categoria</button>
+                </div>
+                
+                <div style="display:grid; gap:10px;" id="product-list-container">`;
+
+            let filteredProducts = store.state.products.filter(p => p.name.toLowerCase().includes(this.searchQuery));
+
+            // A renderização do inventário usa 'all' ou 'cats'
+            if (this.currentTab === 'all') { 
+                html += this.renderProductList(filteredProducts);
+            } else if (this.currentTab === 'cats') {
+                store.state.categories.forEach(cat => {
+                    const prodsInCat = filteredProducts.filter(p => p.category === cat);
+                    if (prodsInCat.length > 0) {
+                        html += `<h4 style="margin:15px 0 5px 0; color:var(--accent-color); border-bottom:1px solid #444">${cat}</h4>`;
+                        html += this.renderProductList(prodsInCat);
+                    }
+                });
+            }
+            
+            html += `</div>`;
         }
         
-        html += `</div>`;
+        // ----------------------------------------------------
+        // FIM DA LÓGICA DE RENDERIZAÇÃO
+        // ----------------------------------------------------
+
+        html += `</div>`; // Fecha admin-content-area
         app.innerHTML = html;
 
         this.attachKeyboardEvents();
 
         // --- CORREÇÃO DO FOCO NA BUSCA ---
-        // Restaura o foco para o input de busca após renderizar
         const searchInput = document.getElementById('inventory-search');
         if (searchInput && this.searchQuery) {
             searchInput.focus();
-            // Move o cursor para o final do texto (truque do value = value)
             const val = searchInput.value;
             searchInput.value = '';
             searchInput.value = val;
         }
+    },
+    
+    // MÉTODO ATUALIZADO: Renderiza a lista de pedidos com filtros e total de vendas
+    renderOrders() {
+        let orders = store.state.orders.sort((a, b) => b.id - a.id); // Mais recente primeiro
+        let totalSalesValue = 0;
+        
+        // 1. FILTRAGEM POR STATUS
+        if (this.orderFilterStatus !== 'all') {
+            orders = orders.filter(o => o.status === this.orderFilterStatus);
+        }
+
+        // 2. FILTRAGEM POR PERÍODO (Entre Datas)
+        const start = this.filterStartDate ? new Date(this.filterStartDate) : null;
+        const end = this.filterEndDate ? new Date(this.filterEndDate) : null;
+        
+        if (start || end) {
+            orders = orders.filter(order => {
+                // A data é armazenada como DD/MM/AAAA, precisa ser convertida para um formato compatível com new Date(AAAA-MM-DD)
+                const dateParts = order.date.split(',')[0].split('/');
+                const orderDate = new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`); 
+                
+                let dateMatch = true;
+                if (start && orderDate < start) dateMatch = false;
+                
+                if (end) {
+                    // Para incluir o dia final, verificamos se a data do pedido é menor que o *próximo* dia (end + 1 dia)
+                    const nextDay = new Date(end);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    if (orderDate >= nextDay) dateMatch = false;
+                }
+                return dateMatch;
+            });
+        }
+        
+        // 3. CÁLCULO DO TOTAL DE VENDAS FINALIZADAS (Apenas 'approved')
+        // Recalculamos sobre o array original de pedidos para obter o total de vendas GERAL (independentemente do filtro de data/status)
+        const allApprovedOrders = store.state.orders
+            .filter(o => o.status === 'approved');
+            
+        totalSalesValue = allApprovedOrders.reduce((acc, o) => acc + o.total, 0);
+
+
+        let orderHtml = `
+            <h3 class="section-title" style="margin-top:0;">Estatísticas de Vendas</h3>
+            <div class="dash-card" style="margin-bottom:20px; text-align:center;">
+                <p style="margin:0; font-size:0.9rem; color:#aaa;">Valor Total de Vendas Finalizadas (Aprovadas):</p>
+                <h3 style="color:var(--success); margin:5px 0 0 0;">${formatPrice(totalSalesValue)}</h3>
+            </div>
+            
+            <h3 class="section-title">Filtros</h3>
+            <div class="filter-controls" style="margin-bottom:20px; padding:15px; background:#222; border-radius:8px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                
+                <div style="grid-column: 1 / -1;"><label for="order-status-filter">Status:</label>
+                <select id="order-status-filter" onchange="Admin.setOrderFilter('status', this.value)" style="width:100%; padding:8px; background:#333; color:white; border:none; border-radius:4px;">
+                    <option value="all">Todos os Pedidos</option>
+                    <option value="pending" ${this.orderFilterStatus === 'pending' ? 'selected' : ''}>Pendentes</option>
+                    <option value="approved" ${this.orderFilterStatus === 'approved' ? 'selected' : ''}>Aprovados (Venda Concluída)</option>
+                    <option value="rejected" ${this.orderFilterStatus === 'rejected' ? 'selected' : ''}>Rejeitados</option>
+                </select></div>
+
+                <div><label for="filter-start-date">Data Inicial:</label>
+                <input type="date" id="filter-start-date" value="${this.filterStartDate}" onchange="Admin.setOrderFilter('start', this.value)" style="width:100%; padding:8px; background:#333; color:white; border:none; border-radius:4px;"></div>
+                
+                <div><label for="filter-end-date">Data Final:</label>
+                <input type="date" id="filter-end-date" value="${this.filterEndDate}" onchange="Admin.setOrderFilter('end', this.value)" style="width:100%; padding:8px; background:#333; color:white; border:none; border-radius:4px;"></div>
+                
+                <button onclick="Admin.clearOrderFilters()" class="btn-secondary" style="grid-column: 1 / -1; background:#444;">Limpar Filtros de Pedido</button>
+            </div>
+        
+        <h3 class="section-title">Lista de Pedidos (${orders.length} encontrados)</h3>`;
+        
+
+        if (orders.length === 0) {
+            orderHtml += '<p style="color:#666; text-align:center;">Nenhum pedido encontrado com os filtros atuais.</p>';
+            return orderHtml;
+        }
+
+        orderHtml += orders.map(o => {
+            const isPending = o.status === 'pending';
+            const statusColor = isPending ? 'orange' : (o.status === 'approved' ? 'var(--success)' : 'red');
+            const statusText = isPending ? 'PENDENTE' : (o.status === 'approved' ? 'APROVADO' : 'REJEITADO');
+            const orderRef = `#${o.id.toString().slice(-4)}`;
+
+            const itemsList = o.items.map(i => 
+                `<small style="display:block;">${i.qty}x ${i.name} (${i.size}) - ${formatPrice(i.price)}</small>`
+            ).join('');
+
+            return `
+                <div class="list-item" style="display:block; border-left: 5px solid ${statusColor}; margin-bottom: 10px; background:#222; padding:15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:bold; color:var(--accent-color);">PEDIDO ${orderRef}</span>
+                        <span style="font-size:0.8rem; color:${statusColor}; font-weight:bold;">${statusText}</span>
+                    </div>
+                    
+                    <small style="color:#aaa;">Data: ${o.date}</small>
+                    <div style="margin:10px 0; padding:10px; background:#333; border-radius:4px;">
+                        ${itemsList}
+                    </div>
+                    
+                    <p style="margin:0; font-size:1rem; font-weight:bold;">Total: ${formatPrice(o.total)}
+                        ${o.discount > 0 ? `<br><small style="color:var(--success);">Desconto: ${formatPrice(o.discount)} (${o.coupon})</small>` : ''}
+                    </p>
+
+                    ${isPending ? `
+                        <div style="margin-top:10px; display:flex; gap:10px;">
+                            <button class="btn-primary" style="background:var(--success); flex:1;" onclick="window.approveOrder(${o.id})">Aprovar</button>
+                            <button class="btn-danger" style="flex:1;" onclick="window.rejectOrder(${o.id})">Rejeitar</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+        return orderHtml;
     },
 
     renderProductList(products) {
@@ -155,12 +347,12 @@ export const Admin = {
             
             return `
             <div class="list-item swipe-container ${isSelected}" 
-                 id="row-${p.id}"
-                 onclick="window.selectRow(${p.id})" 
-                 ondblclick="window.editProduct(${p.id})"
-                 ontouchstart="window.handleTouchStart(event, ${p.id})"
-                 ontouchmove="window.handleTouchMove(event, ${p.id})"
-                 ontouchend="window.handleTouchEnd(event, ${p.id})">
+                id="row-${p.id}"
+                onclick="window.selectRow(${p.id})" 
+                ondblclick="window.editProduct(${p.id})"
+                ontouchstart="window.handleTouchStart(event, ${p.id})"
+                ontouchmove="window.handleTouchMove(event, ${p.id})"
+                ontouchend="window.handleTouchEnd(event, ${p.id})">
                 
                 <div class="swipe-delete-btn" onclick="event.stopPropagation(); window.deleteProduct(${p.id})">
                     <span class="material-icons">delete</span>
@@ -191,7 +383,7 @@ export const Admin = {
     },
 
     handleKeyDelete(e) {
-        if (e.key === 'Delete' && Admin.selectedRowId) {
+        if (e.key === 'Delete' && Admin.selectedRowId && Admin.currentTab !== 'orders') {
             if(confirm('Excluir produto selecionado?')) {
                 store.deleteProduct(Admin.selectedRowId);
                 Admin.selectedRowId = null;

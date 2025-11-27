@@ -1,0 +1,82 @@
+mutation CreateSeedData @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public.") @transaction {
+  business_insertMany(data: [
+    {
+      id: "67c848a0-0450-4c21-b3c9-4497179337b1",
+      name: "Coffee Shop",
+      description: "A cozy place for coffee lovers",
+      contactEmail: "coffee@example.com",
+      phoneNumber: "123-456-7890",
+      createdAt: "2024-01-24T10:00:00Z",
+      logoUrl: "https://example.com/coffee.png"
+    },
+    {
+      id: "78d959b1-1561-5d32-c4da-55a828a448c2",
+      name: "Bookstore",
+      description: "A wide selection of books for all ages",
+      contactEmail: "books@example.com",
+      phoneNumber: "234-567-9012",
+      createdAt: "2024-01-24T11:00:00Z",
+      logoUrl: "https://example.com/books.png"
+    }
+  ])
+  category_insertMany(data: [
+    {
+      id: "89e060c2-2672-6e43-d5eb-66b939a559d3",
+      businessId: "67c848a0-0450-4c21-b3c9-4497179337b1",
+      name: "Espresso",
+      description: "Espresso drinks",
+      createdAt: "2024-01-24T10:15:00Z"
+    },
+    {
+      id: "9af171d3-3783-7f54-e6fc-77ca4aa66ae4",
+      businessId: "78d959b1-1561-5d32-c4da-55a828a448c2",
+      name: "Fiction",
+      description: "Fiction books",
+      createdAt: "2024-01-24T11:15:00Z"
+    }
+  ])
+  product_insertMany(data: [
+    {
+      id: "a0f282e4-4894-8065-f70d-88db5bb77bf5",
+      businessId: "67c848a0-0450-4c21-b3c9-4497179337b1",
+      categoryId: "89e060c2-2672-6e43-d5eb-66b939a559d3",
+      name: "Latte",
+      description: "Classic latte",
+      createdAt: "2024-01-24T10:30:00Z",
+      imageUrl: "https://example.com/latte.png",
+      isFeatured: true,
+      price: 3.50,
+      stockQuantity: 100
+    },
+    {
+      id: "b10393f5-59a5-9176-081e-99ec6cc88cf6",
+      businessId: "78d959b1-1561-5d32-c4da-55a828a448c2",
+      categoryId: "9af171d3-3783-7f54-e6fc-77ca4aa66ae4",
+      name: "The Lord of the Rings",
+      description: "J.R.R. Tolkien",
+      createdAt: "2024-01-24T11:30:00Z",
+      imageUrl: "https://example.com/lotr.png",
+      isFeatured: true,
+      price: 9.99,
+      stockQuantity: 50
+    }
+  ])
+  productImage_insertMany(data: [
+    {
+      id: "c214a406-6abe-a287-192f-aade7dd99dd7",
+      productId: "a0f282e4-4894-8065-f70d-88db5bb77bf5",
+      imageUrl: "https://example.com/latte_image1.png",
+      createdAt: "2024-01-24T10:35:00Z",
+      sortOrder: 1,
+      caption: "A delicious latte"
+    },
+    {
+      id: "d325b517-7bcf-b398-2a30-bbf08eeaaee8",
+      productId: "b10393f5-59a5-9176-081e-99ec6cc88cf6",
+      imageUrl: "https://example.com/lotr_image1.png",
+      createdAt: "2024-01-24T11:35:00Z",
+      sortOrder: 1,
+      caption: "The Fellowship"
+    }
+  ])
+}

@@ -51,5 +51,35 @@
         <small>&copy; 2024 Veste Manto. Todos os direitos reservados.</small>
     </footer>
     <script type="module" src="js/app.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script> 
+
+    <script>
+        // Use as credenciais do seu projeto "veste-manto-dbbb5"
+        const firebaseConfig = {
+            apiKey: "AIzaSyAb6z9pJ0OPf6fvwYhLnNOpEbrIOt-Ak2E", 
+            authDomain: "veste-manto-dbbb5.firebaseapp.com",
+            projectId: "veste-manto-dbbb5",
+            storageBucket: "veste-manto-dbbb5.appspot.com",
+            messagingSenderId: "1076257244716",
+            appId: "1:1076257244716:web:935b23916733ce82db7389"
+        };
+
+        // VARIÁVEL CRÍTICA PARA O store.js
+        window.CLIENT_ID = 'veste-manto-dbbb5'; 
+
+        // Inicializa o Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        // Define as Referências Globais
+        window.db = firebase.firestore(); // ESSA LINHA PRECISA RODAR SEM ERRO
+        window.storage = firebase.storage();
+    </script>
+
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>

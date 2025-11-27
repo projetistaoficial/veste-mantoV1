@@ -1,0 +1,27 @@
+mutation CreateBusiness($name: String!, $createdAt: Timestamp!) @auth(level: USER) {
+  business_insert(data: {name: $name, createdAt: $createdAt})
+}
+
+query ListProductsByCategory($categoryId: UUID!) @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  products(where: {categoryId: {eq: $categoryId}}) {
+    id
+    name
+    description
+    price
+    imageUrl
+  }
+}
+
+mutation UpdateProductStock($id: UUID!, $stockQuantity: Int!) @auth(level: USER) {
+  product_update(id: $id, data: {stockQuantity: $stockQuantity})
+}
+
+query ListFeaturedProducts @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  products(where: {isFeatured: {eq: true}}) {
+    id
+    name
+    description
+    price
+    imageUrl
+  }
+}

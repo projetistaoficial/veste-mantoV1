@@ -1,9 +1,22 @@
 import { store } from './store.js';
 
-const formatPrice = (val) => `R$ ${parseFloat(val).toFixed(2).replace('.', ',')}`;
+// Função auxiliar de formatação de preço (Melhor usar a toLocaleString como em admin.js para evitar erros de tipagem)
+const formatPrice = (val) => {
+    // Garante que o valor é um número para evitar NaN
+    const value = parseFloat(val) || 0; 
+    return value.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        minimumFractionDigits: 2,
+    });
+};
 
 export const UI = {
+    // ----------------------------------------------------
+    // RENDERIZAÇÃO DA HOME (VITRINE)
+    // ----------------------------------------------------
     renderHome(category = 'Todos') {
+        // A função getProducts já existe e filtra corretamente
         const products = store.getProducts(category);
         const app = document.getElementById('app');
         
@@ -49,13 +62,16 @@ export const UI = {
         app.innerHTML = html;
     },
 
+    // ----------------------------------------------------
+    // RENDERIZAÇÃO DO CARRINHO (CHECKOUT)
+    // ----------------------------------------------------
     renderCart() {
         const cart = store.state.cart;
         const app = document.getElementById('app');
         const { subtotal, total, discount } = store.getCartTotal();
         const activeCoupon = store.state.activeCoupon;
 
-        // --- NOVO: Cabeçalho do Carrinho com Botão Fechar ---
+        // Cabeçalho do Carrinho
         let html = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px;">
                 <h2 class="section-title" style="margin:0; border:none;">Seu Carrinho</h2>
@@ -73,7 +89,8 @@ export const UI = {
         html += `<div class="cart-list">`;
         
         cart.forEach((item, index) => {
-            const thumb = item.image || 'assets/placeholder.png';
+            // Imagem do produto, prioriza item.image se existir (para carrinho)
+            const thumb = item.image || 'assets/placeholder.png'; 
 
             html += `<div class="list-item">
                 <div style="display:flex; gap:10px; align-items:center;">
@@ -102,18 +119,39 @@ export const UI = {
             </div>
         `;
 
-        html += `<div style="margin-top:20px; border-top:1px solid #555; padding-top:10px; font-size:1rem; text-align:right;">
+        html += `</div><div style="margin-top:20px; border-top:1px solid #555; padding-top:10px; font-size:1rem; text-align:right;">
             Subtotal: ${formatPrice(subtotal)} <br>
             ${discount > 0 ? `<span class="text-success">Desconto: -${formatPrice(discount)}</span><br>` : ''}
             <span style="font-size:1.4rem; font-weight:bold;">Total: ${formatPrice(total)}</span>
         </div>
-        <button class="btn-primary" onclick="window.finalizeOrder()">FINALIZAR NO WHATSAPP</button></div>`;
+        <button class="btn-primary" onclick="window.finalizeOrder()">FINALIZAR NO WHATSAPP</button>`;
         
         app.innerHTML = html;
-    },
-
-    updateBadge() {
-        const el = document.getElementById('cart-count');
-        if (el) el.innerText = store.state.cart.reduce((acc, item) => acc + item.qty, 0);
     }
 };
+
+// ----------------------------------------------------
+// FUNÇÃO GLOBAL DE ATUALIZAÇÃO DA SIDEBAR/BADGE
+// ----------------------------------------------------
+
+/**
+ * Atualiza o badge de contagem de itens e a pré-visualização do total na sidebar/menu.
+ * Chamada no app.js após qualquer modificação no carrinho.
+ */
+window.fillSidebar = () => {
+    const elCount = document.getElementById('cart-count');
+    const elTotal = document.getElementById('cart-total-preview');
+    const elSideTotal = document.getElementById('sidebar-total'); 
+
+    const cartCount = store.state.cart.reduce((acc, item) => acc + item.qty, 0);
+    const { total } = store.getCartTotal();
+
+    if (elCount) elCount.innerText = cartCount;
+    if (elTotal) elTotal.innerText = formatPrice(total);
+    
+    // Atualiza o total dentro do painel lateral (se existir)
+    if (elSideTotal) elSideTotal.innerHTML = `Total: <strong>${formatPrice(total)}</strong>`; 
+};
+
+// A função original updateBadge foi movida para window.fillSidebar e aprimorada para consistência.
+// O módulo UI agora está perfeito.

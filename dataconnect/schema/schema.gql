@@ -1,0 +1,36 @@
+type Business @table {
+  name: String!
+  createdAt: Timestamp!
+  contactEmail: String
+  phoneNumber: String
+  logoUrl: String
+  description: String
+}
+
+type Category @table {
+  name: String!
+  createdAt: Timestamp!
+  business: Business!
+  description: String
+}
+
+type Product @table {
+  name: String!
+  price: Float!
+  createdAt: Timestamp!
+  business: Business!
+  category: Category!
+  description: String
+  stockQuantity: Int
+  sku: String
+  isFeatured: Boolean
+  imageUrl: String
+}
+
+type ProductImage @table {
+  imageUrl: String!
+  createdAt: Timestamp!
+  product: Product!
+  caption: String
+  sortOrder: Int
+}
